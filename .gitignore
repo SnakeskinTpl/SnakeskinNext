@@ -48,5 +48,6 @@ node_modules
 *.log
 
 # Temporary
+/out
 *.tmp
 /test/tmp
