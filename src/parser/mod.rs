@@ -7,7 +7,7 @@ use std::path::{Path, Iter};
 
 use std::convert::AsRef;
 use std::iter::Iterator;
-use std::string::*;
+use std::string::String;
 
 pub fn parse_file<T: AsRef<Path>>(path: T) -> Result<Vec<Node>, Error> {
     let file = File::open(path)?;
