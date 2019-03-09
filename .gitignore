@@ -49,5 +49,6 @@ node_modules
 
 # Temporary
 /out
+/target
 *.tmp
 /test/tmp

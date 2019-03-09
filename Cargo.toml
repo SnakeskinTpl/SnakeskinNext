@@ -1,0 +1,7 @@
+[package]
+name = "Snakeskin"
+version = "8.0.0"
+author = ["Kobezzza <kobezzza@gmail.com>"]
+edition = "2018"
+
+[dependencies]
