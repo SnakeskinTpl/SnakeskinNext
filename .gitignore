@@ -52,3 +52,10 @@ node_modules
 /target
 *.tmp
 /test/tmp
+
+
+# Added by cargo
+#
+# already existing elements were commented out
+
+#/target
