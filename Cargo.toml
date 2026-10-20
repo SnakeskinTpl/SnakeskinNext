@@ -1,7 +1,6 @@
 [package]
-name = "Snakeskin"
-version = "8.0.0"
-author = ["Kobezzza <kobezzza@gmail.com>"]
-edition = "2018"
+name = "SnakeskinNext"
+version = "0.1.0"
+edition = "2024"
 
 [dependencies]
