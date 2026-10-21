@@ -7,6 +7,7 @@
 
 # Code and tests
 
+- Order file headers consistently: imports first (standard library, external crates, crate-local paths, relative paths), then child modules with their re-exports, then the conditional test module. Separate import groups with blank lines.
 - Keep comments short and focused on contracts or behavior that is not obvious from the code.
 - Treat tests as documentation: separate setup, actions, assertions, and distinct scenario steps with blank lines.
 - Prefer meaningful behavioral tests, including boundary cases and interactions between combinators. Avoid tests that merely repeat implementation details.
