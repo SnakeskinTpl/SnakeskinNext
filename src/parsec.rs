@@ -26,6 +26,8 @@ mod lookup;
 pub use lookup::{lookup, Lookup};
 mod not;
 pub use not::{not, Not, NotError};
+mod cut;
+pub use cut::{cut, Cut, CutError};
 
 mod rec;
 pub use rec::{rec, Rec};
