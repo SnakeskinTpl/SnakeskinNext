@@ -44,32 +44,6 @@ fn empty_success_is_allowed_at_end_of_input() {
     assert!(remaining.is_at_end());
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct Context;
-
-impl crate::parsec::input::ParserState for Context {
-    fn as_any(&self) -> &dyn std::any::Any { self }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
-    fn clone_box(&self) -> Box<dyn crate::parsec::input::ParserState> { Box::new(self.clone()) }
-}
-
-fn pop_context<'a>(output: &'a str, mut input: ParserInput<'a>) -> ParserResult<'a, &'a str> {
-    input.pop_state();
-    Ok((output, input))
-}
-
-#[test]
-fn successful_inner_parse_does_not_change_states() {
-    let mut input = ParserInput::new("a");
-    input.push_state(Context);
-    let parser = lookup(flat_map(tag("a"), pop_context));
-
-    let ((), remaining) = parser.parse(input).unwrap();
-
-    assert_eq!(remaining.byte_position(), 0);
-    assert!(remaining.is_current_state(&Context));
-}
-
 #[test]
 fn sequence_after_lookahead_reads_original_input() {
     let parser = seq(lookup(tag("ab")), tag("ab"));

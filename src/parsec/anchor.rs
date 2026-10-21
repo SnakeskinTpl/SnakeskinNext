@@ -6,7 +6,7 @@ pub use err::{StartOfInputError, LineStartError};
 #[cfg(test)]
 mod tests;
 
-/// Matches byte position zero without consuming input or changing parser states.
+/// Matches byte position zero without consuming input.
 pub fn start_of_input() -> StartOfInput {
     StartOfInput
 }

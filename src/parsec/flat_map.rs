@@ -4,7 +4,7 @@ use super::{Parser, ParserInput, ParserResult};
 mod tests;
 
 /// Passes the parsed output and remaining input to the next parsing step.
-/// The callback may change input and states or return an error.
+/// The callback may change input or return an error.
 pub fn flat_map<'a, P, F, O>(parser: P, next: F) -> FlatMap<P, F>
 where
     P: Parser<'a>,

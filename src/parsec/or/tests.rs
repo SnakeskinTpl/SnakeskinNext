@@ -68,38 +68,3 @@ fn equal_positions_preserve_both_errors() {
     assert!(error.second.to_string().contains("include"));
     assert!(error.to_string().contains(" or "));
 }
-
-#[derive(Clone, Debug, PartialEq)]
-struct Context;
-
-impl crate::parsec::input::ParserState for Context {
-    fn as_any(&self) -> &dyn std::any::Any { self }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
-    fn clone_box(&self) -> Box<dyn crate::parsec::input::ParserState> { Box::new(self.clone()) }
-}
-
-fn push_context<'a>(output: &'a str, mut input: ParserInput<'a>) -> ParserResult<'a, &'a str> {
-    input.push_state(Context);
-    Ok((output, input))
-}
-
-#[test]
-fn failed_branch_state_changes_are_rolled_back() {
-    let first = seq(flat_map(tag("a"), push_context), tag("x"));
-    let parser = or(first, tag("ab"));
-
-    let (output, remaining) = parser.parse(ParserInput::new("ab")).unwrap();
-
-    assert_eq!(output, Either::Right("ab"));
-    assert!(remaining.peek_state().is_none());
-}
-
-#[test]
-fn successful_branch_state_changes_are_preserved() {
-    let parser = or(flat_map(tag("a"), push_context), tag("b"));
-
-    let (output, remaining) = parser.parse(ParserInput::new("a")).unwrap();
-
-    assert_eq!(output, Either::Left("a"));
-    assert!(remaining.is_current_state(&Context));
-}

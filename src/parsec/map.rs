@@ -3,7 +3,7 @@ use super::{Parser, ParserInput, ParserResult};
 #[cfg(test)]
 mod tests;
 
-/// Transforms successful output without changing the remaining input or states.
+/// Transforms successful output without changing the remaining input.
 pub fn map<'a, P, F, O>(parser: P, transform: F) -> Map<P, F>
 where
     P: Parser<'a>,

@@ -3,7 +3,7 @@ use super::{Parser, ParserInput, ParserResult};
 #[cfg(test)]
 mod tests;
 
-/// Returns None on a recoverable failure, restoring the original cursor and states.
+/// Returns None on a recoverable failure, restoring the original cursor.
 /// Non-recoverable errors are propagated unchanged.
 /// A successful match returns Some, including when no input is consumed.
 pub fn opt<'a, P: Parser<'a>>(parser: P) -> Opt<P> {

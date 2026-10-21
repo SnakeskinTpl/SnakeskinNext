@@ -41,32 +41,6 @@ fn empty_success_is_a_forbidden_match_even_at_end() {
     assert_eq!(*error.location(), ErrorLocation { start_byte: 0, failure_byte: 0, found_char: None });
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct Context;
-
-impl crate::parsec::input::ParserState for Context {
-    fn as_any(&self) -> &dyn std::any::Any { self }
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any { self }
-    fn clone_box(&self) -> Box<dyn crate::parsec::input::ParserState> { Box::new(self.clone()) }
-}
-
-fn pop_context<'a>(output: &'a str, mut input: ParserInput<'a>) -> ParserResult<'a, &'a str> {
-    input.pop_state();
-    Ok((output, input))
-}
-
-#[test]
-fn failed_inner_parse_does_not_change_states() {
-    let mut input = ParserInput::new("ab");
-    input.push_state(Context);
-    let parser = not(seq(flat_map(tag("a"), pop_context), tag("x")));
-
-    let ((), remaining) = parser.parse(input).unwrap();
-
-    assert_eq!(remaining.byte_position(), 0);
-    assert!(remaining.is_current_state(&Context));
-}
-
 #[test]
 fn sequence_after_negative_lookahead_reads_original_input() {
     let parser = seq(not(tag("ax")), tag("ab"));

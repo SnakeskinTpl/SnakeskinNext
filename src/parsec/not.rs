@@ -8,7 +8,7 @@ mod tests;
 
 /// Negative lookahead: succeeds only if the inner parser fails recoverably.
 /// Non-recoverable errors are propagated unchanged.
-/// Discards all cursor and state changes from the attempted parse.
+/// Discards cursor changes from the attempted parse.
 pub fn not<'a, P: Parser<'a>>(parser: P) -> Not<P> {
     Not(parser)
 }

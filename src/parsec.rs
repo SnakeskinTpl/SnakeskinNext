@@ -46,7 +46,7 @@ mod err;
 pub use err::DataError;
 
 pub mod input;
-pub use input::{ParserInput, ParserState};
+pub use input::ParserInput;
 
 #[cfg(test)]
 mod tests;
