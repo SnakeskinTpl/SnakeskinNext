@@ -1,5 +1,5 @@
-use SnakeskinNext::parsec::input::ParserInput;
 use SnakeskinNext::parsec::{Either, Parser, tag};
+use SnakeskinNext::parsec::input::ParserInput;
 
 #[test]
 fn qualified_macro_call_supports_multiple_branches() {

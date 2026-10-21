@@ -1,5 +1,6 @@
-use super::*;
 use std::cell::Cell;
+
+use super::*;
 
 // expression = "x" | "(" expression ")"
 fn expression<'a>() -> Box<dyn Parser<'a, Output = &'a str>> {

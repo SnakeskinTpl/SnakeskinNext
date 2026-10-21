@@ -1,5 +1,6 @@
-use super::*;
 use std::cell::Cell;
+
+use super::*;
 
 #[test]
 fn sequence_preserves_output_order_and_remaining_input() {

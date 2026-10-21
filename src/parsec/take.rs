@@ -1,12 +1,12 @@
+use std::ops::RangeBounds;
+
+use super::*;
+
 mod err;
+pub use err::TakeError;
 
 #[cfg(test)]
 mod tests;
-
-use std::ops::{Bound, RangeBounds};
-
-use super::*;
-pub use err::TakeError;
 
 /// Consumes matching characters and returns a slice of the source.
 /// Bounds count Unicode scalar values, not bytes.
@@ -14,21 +14,7 @@ pub use err::TakeError;
 /// Escape tracking starts fresh for each parse call; backslashes are preserved.
 /// Panics if the range contains no representable character count.
 pub fn take<P: Fn(char, bool) -> bool>(predicate: P, range: impl RangeBounds<usize>) -> Take<P> {
-    let min = match range.start_bound() {
-        Bound::Unbounded => 0,
-        Bound::Included(&i) => i,
-        Bound::Excluded(&i) => i.checked_add(1).expect("Invalid character count range")
-    };
-
-    let max = match range.end_bound() {
-        Bound::Unbounded => usize::MAX,
-        Bound::Included(&i) => i,
-        Bound::Excluded(&i) => i.checked_sub(1).expect("Invalid character count range")
-    };
-
-    if min > max {
-        panic!("Invalid character count range");
-    }
+    let (min, max) = utils::count_bounds(range).expect("Invalid character count range");
 
     Take { predicate, min, max }
 }

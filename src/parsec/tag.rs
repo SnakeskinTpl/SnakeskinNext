@@ -1,10 +1,10 @@
+use super::*;
+
 mod err;
+pub use err::TagError;
 
 #[cfg(test)]
 mod tests;
-
-use super::*;
-pub use err::TagError;
 
 /// Always succeeds without consuming input.
 pub fn succeed() -> Tag<&'static str> {
@@ -14,19 +14,17 @@ pub fn succeed() -> Tag<&'static str> {
 /// Matches an exact prefix and returns a slice of the input source.
 /// An empty tag succeeds without advancing the cursor.
 pub fn tag<T: AsRef<str>>(tag: T) -> Tag<T> {
-    Tag { tag }
+    Tag(tag)
 }
 
 #[derive(Debug)]
-pub struct Tag<T> {
-    tag: T
-}
+pub struct Tag<T>(T);
 
 impl<'a, T: AsRef<str>> Parser<'a> for Tag<T> {
     type Output = &'a str;
 
     fn parse(&self, mut input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
-        let tag = self.tag.as_ref();
+        let tag = self.0.as_ref();
         let start = input.byte_position();
 
         for expected in tag.chars() {

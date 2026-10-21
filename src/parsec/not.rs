@@ -1,10 +1,10 @@
+use super::*;
+
 mod err;
+pub use err::NotError;
 
 #[cfg(test)]
 mod tests;
-
-use super::*;
-pub use err::NotError;
 
 /// Negative lookahead: succeeds only if the inner parser fails recoverably.
 /// Non-recoverable errors are propagated unchanged.

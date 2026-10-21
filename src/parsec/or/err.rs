@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+
 use crate::parsec::{ErrorLocation, ParseError};
 
 /// Prioritizes non-recoverable errors, then distance, preserving ties.

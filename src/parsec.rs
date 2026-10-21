@@ -1,7 +1,13 @@
+use std::error::Error;
+
 mod tag;
 pub use tag::{tag, succeed, Tag, TagError};
 mod take;
 pub use take::{take, Take, TakeError};
+mod take_match;
+pub use take_match::{take_match, TakeMatch, TakeMatchError};
+mod utils;
+
 mod ltrim;
 pub use ltrim::{ltrim, LTrim};
 
@@ -27,14 +33,14 @@ mod flat_map;
 pub use flat_map::{flat_map, FlatMap};
 mod map;
 pub use map::{map, Map};
+mod state;
+pub use state::{state, State};
 
 mod err;
 pub use err::DataError;
 
 pub mod input;
 pub use input::{ParserInput, ParserState};
-
-use std::error::Error;
 
 #[cfg(test)]
 mod tests;

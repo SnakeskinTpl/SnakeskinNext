@@ -1,9 +1,8 @@
 mod state;
+pub use state::ParserState;
 
 #[cfg(test)]
 mod tests;
-
-pub use state::ParserState;
 
 #[derive(Debug)]
 /// A character cursor and state stack over borrowed source text.

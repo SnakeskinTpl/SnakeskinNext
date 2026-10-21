@@ -1,5 +1,5 @@
-use SnakeskinNext::parsec::input::ParserInput;
 use SnakeskinNext::parsec::{Parser, tag};
+use SnakeskinNext::parsec::input::ParserInput;
 
 #[test]
 fn qualified_macro_returns_common_type_for_multiple_branches() {

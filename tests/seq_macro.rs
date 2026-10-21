@@ -1,5 +1,5 @@
-use SnakeskinNext::parsec::input::ParserInput;
 use SnakeskinNext::parsec::{Parser, tag};
+use SnakeskinNext::parsec::input::ParserInput;
 
 #[test]
 fn qualified_macro_call_nests_outputs_and_accepts_trailing_comma() {

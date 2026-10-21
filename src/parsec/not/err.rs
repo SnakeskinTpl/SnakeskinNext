@@ -1,5 +1,6 @@
-use std::fmt::Display;
 use std::error::Error;
+use std::fmt::Display;
+
 use crate::parsec::{ErrorLocation, ParseError};
 
 #[derive(Debug)]

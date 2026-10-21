@@ -1,5 +1,6 @@
-use super::*;
 use std::cell::Cell;
+
+use super::*;
 
 #[test]
 fn transforms_output_and_preserves_remaining_input() {

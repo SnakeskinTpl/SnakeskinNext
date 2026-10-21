@@ -1,7 +1,7 @@
+use super::*;
+
 #[cfg(test)]
 mod tests;
-
-use super::*;
 
 /// Skips leading Unicode whitespace, including line breaks, then runs the parser.
 /// Leaves trailing whitespace untouched and calls the parser even at end of input.

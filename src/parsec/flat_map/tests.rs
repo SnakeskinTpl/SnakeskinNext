@@ -1,5 +1,6 @@
-use super::*;
 use std::cell::Cell;
+
+use super::*;
 
 #[test]
 fn callback_selects_next_parser_from_previous_output() {

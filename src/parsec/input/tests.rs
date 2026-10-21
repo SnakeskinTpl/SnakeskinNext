@@ -1,5 +1,6 @@
-use super::{ParserInput, ParserState};
 use std::any::Any;
+
+use super::{ParserInput, ParserState};
 
 #[derive(Clone, Debug, PartialEq)]
 struct TextState(String);

@@ -1,33 +1,19 @@
+use std::ops::RangeBounds;
+
+use super::*;
+
 mod err;
+pub use err::{RepeatError, RepeatErrorKind};
 
 #[cfg(test)]
 mod tests;
-
-use std::ops::{Bound, RangeBounds};
-
-use super::*;
-pub use err::{RepeatError, RepeatErrorKind};
 
 /// Repeats a parser within the given count bounds, restoring input on a failed attempt.
 /// Successful iterations must advance the input position.
 /// Non-recoverable errors are propagated even after the minimum is met.
 /// Panics if the range contains no representable repetition count.
 pub fn repeat<'a, P: Parser<'a>>(parser: P, range: impl RangeBounds<usize>) -> Repeat<P> {
-    let min = match range.start_bound() {
-        Bound::Unbounded => 0,
-        Bound::Included(&i) => i,
-        Bound::Excluded(&i) => i.checked_add(1).expect("Invalid repetition range")
-    };
-
-    let max = match range.end_bound() {
-        Bound::Unbounded => usize::MAX,
-        Bound::Included(&i) => i,
-        Bound::Excluded(&i) => i.checked_sub(1).expect("Invalid repetition range")
-    };
-
-    if min > max {
-        panic!("Invalid repetition range");
-    }
+    let (min, max) = utils::count_bounds(range).expect("Invalid repetition range");
 
     Repeat { parser, min, max }
 }
