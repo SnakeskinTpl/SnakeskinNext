@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -58,7 +60,7 @@ fn callback_error_preserves_context_and_recoverability() {
 
     let error = parser.parse(ParserInput::new("x")).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 0, byte_position: 0, actual: Some('x') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 0, failure_byte: 0, found_char: Some('x') });
     assert!(!error.is_recoverable());
     assert!((&*error as &dyn std::error::Error).is::<RepeatError>());
 }

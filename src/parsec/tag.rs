@@ -1,4 +1,4 @@
-use super::*;
+use super::{Parser, ParserInput, ParserResult, ErrorLocation};
 
 mod err;
 pub use err::TagError;
@@ -31,7 +31,7 @@ impl<'a, T: AsRef<str>> Parser<'a> for Tag<T> {
             let actual = input.peek();
 
             if actual != Some(expected) {
-                let location = ErrorLocation { start, byte_position: input.byte_position(), actual };
+                let location = ErrorLocation { start_byte: start, failure_byte: input.byte_position(), found_char: actual };
                 return Err(TagError::new(location, tag, expected));
             }
 

@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use super::*;
+use super::{Parser, ParserInput, ParserResult, ErrorLocation, utils};
 
 mod err;
 pub use err::TakeMatchError;
@@ -44,7 +44,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
                 }
                 Err(cause) if !cause.is_recoverable() => return Err(cause),
                 Err(cause) if count < self.min => {
-                    let location = ErrorLocation { start, byte_position: input.byte_position(), actual: input.peek() };
+                    let location = ErrorLocation { start_byte: start, failure_byte: input.byte_position(), found_char: input.peek() };
                     return Err(TakeMatchError::new(location, self.min, count, Some(cause)));
                 }
                 Err(_) => break,
@@ -53,9 +53,9 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
 
         if count < self.min {
             let location = ErrorLocation {
-                start,
-                byte_position: input.byte_position(),
-                actual: input.peek(),
+                start_byte: start,
+                failure_byte: input.byte_position(),
+                found_char: input.peek(),
             };
 
             return Err(TakeMatchError::new(location, self.min, count, None));

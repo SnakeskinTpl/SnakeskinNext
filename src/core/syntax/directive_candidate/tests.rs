@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -133,6 +135,6 @@ fn unclosed_directive_reports_end_of_input() {
         let error = classic_directive_candidate().parse(ParserInput::new(source)).unwrap_err();
 
         assert_eq!(error.byte_position(), source.len());
-        assert_eq!(error.location().actual, None);
+        assert_eq!(error.location().found_char, None);
     }
 }

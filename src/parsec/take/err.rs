@@ -18,9 +18,9 @@ impl TakeError {
 
 impl Display for TakeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "At byte position {}, expected at least {} matching characters, matched {}", self.location.byte_position, self.min, self.matched)?;
+        write!(f, "At byte position {}, expected at least {} matching characters, matched {}", self.location.failure_byte, self.min, self.matched)?;
 
-        match self.location.actual {
+        match self.location.found_char {
             Some(actual) => write!(f, ", got {:?}", actual),
             None => write!(f, ", reached end of input"),
         }

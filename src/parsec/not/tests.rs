@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -18,7 +20,7 @@ fn forbidden_match_reports_start_of_check() {
 
     let error = not(tag("я")).parse(input).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 1, actual: Some('я') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 1, found_char: Some('я') });
     assert!((&*error as &dyn std::error::Error).is::<NotError>());
 }
 
@@ -36,7 +38,7 @@ fn incomplete_match_succeeds_without_consuming_input() {
 fn empty_success_is_a_forbidden_match_even_at_end() {
     let error = not(succeed()).parse(ParserInput::new("")).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 0, byte_position: 0, actual: None });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 0, failure_byte: 0, found_char: None });
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -7,12 +9,12 @@ fn alternative_location_starts_at_choice_entry() {
 
     let error = choice(first, second).parse(ParserInput::new("abX")).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 0, byte_position: 2, actual: Some('X') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 0, failure_byte: 2, found_char: Some('X') });
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<AlternativeError>().unwrap();
 
-    assert_eq!(error.first.location().start, 1);
-    assert_eq!(error.second.location().start, 2);
+    assert_eq!(error.first.location().start_byte, 1);
+    assert_eq!(error.second.location().start_byte, 2);
 }
 
 #[test]

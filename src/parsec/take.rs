@@ -1,6 +1,6 @@
 use std::ops::RangeBounds;
 
-use super::*;
+use super::{Parser, ParserInput, ParserResult, ErrorLocation, utils};
 
 mod err;
 pub use err::TakeError;
@@ -56,9 +56,9 @@ impl<'a, P: Fn(char, bool) -> bool> Parser<'a> for Take<P> {
 
         if count < self.min {
             let location = ErrorLocation {
-                start,
-                byte_position: input.byte_position(),
-                actual: input.peek(),
+                start_byte: start,
+                failure_byte: input.byte_position(),
+                found_char: input.peek(),
             };
 
             return Err(TakeError::new(location, self.min, count))

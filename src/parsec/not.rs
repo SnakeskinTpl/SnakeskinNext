@@ -1,4 +1,4 @@
-use super::*;
+use super::{Parser, ParserInput, ParserResult, ErrorLocation};
 
 mod err;
 pub use err::NotError;
@@ -22,9 +22,9 @@ impl<'a, P: Parser<'a>> Parser<'a> for Not<P> {
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
         match self.0.parse(input.clone()) {
             Ok(_) => Err(NotError::new(ErrorLocation {
-                start: input.byte_position(),
-                byte_position: input.byte_position(),
-                actual: input.peek(),
+                start_byte: input.byte_position(),
+                failure_byte: input.byte_position(),
+                found_char: input.peek(),
             })),
             Err(error) if error.is_recoverable() => Ok(((), input)),
             Err(error) => Err(error),

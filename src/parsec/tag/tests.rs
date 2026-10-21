@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -65,10 +67,10 @@ fn mismatch_reports_expected_and_actual_characters() {
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 
-    assert_eq!(error.location().start, 1);
+    assert_eq!(error.location().start_byte, 1);
     assert_eq!(error.expected_tag, "я🦀");
     assert_eq!(error.expected, '🦀');
-    assert_eq!(error.location().actual, Some('x'));
+    assert_eq!(error.location().found_char, Some('x'));
     assert!(error.to_string().contains('x'));
 }
 
@@ -80,10 +82,10 @@ fn incomplete_tag_preserves_expectation_at_end_of_input() {
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 
-    assert_eq!(error.location().start, 0);
+    assert_eq!(error.location().start_byte, 0);
     assert_eq!(error.expected_tag, "я🦀");
     assert_eq!(error.expected, '🦀');
-    assert_eq!(error.location().actual, None);
+    assert_eq!(error.location().found_char, None);
     assert!(error.to_string().contains("end of input"));
 }
 

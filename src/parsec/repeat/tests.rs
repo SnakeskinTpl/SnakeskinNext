@@ -1,5 +1,7 @@
 use std::ops::Bound;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -35,12 +37,12 @@ fn minimum_failure_preserves_furthest_position_and_inner_cause() {
     for (source, actual) in [("abcabX", Some('X')), ("abcab", None)] {
         let error = repeat(tag("abc"), 2..).parse(ParserInput::new(source)).unwrap_err();
 
-        assert_eq!(*error.location(), ErrorLocation { start: 0, byte_position: 5, actual });
+        assert_eq!(*error.location(), ErrorLocation { start_byte: 0, failure_byte: 5, found_char: actual });
 
         let cause = error.source().unwrap().downcast_ref::<TagError>().unwrap();
 
-        assert_eq!(cause.location().start, 3);
-        assert_eq!(cause.location().byte_position, 5);
+        assert_eq!(cause.location().start_byte, 3);
+        assert_eq!(cause.location().failure_byte, 5);
         assert_eq!(cause.expected_tag, "abc");
         assert_eq!(cause.expected, 'c');
         assert!(error.to_string().contains("abc"));
@@ -117,7 +119,7 @@ fn minimum_failure_reports_repetition_start_and_current_position() {
 
     let error = repeat(tag("я"), 2..).parse(input).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 3, actual: Some('x') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 3, found_char: Some('x') });
 }
 
 #[test]
@@ -129,7 +131,7 @@ fn empty_input_is_allowed_only_for_zero_minimum() {
 
     let error = repeat(tag("a"), 1..).parse(ParserInput::new("")).unwrap_err();
 
-    assert_eq!(error.location().actual, None);
+    assert_eq!(error.location().found_char, None);
     assert_eq!(error.byte_position(), 0);
 }
 

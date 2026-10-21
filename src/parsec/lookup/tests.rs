@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -18,7 +20,7 @@ fn failure_preserves_inner_error_context() {
 
     let error = lookup(tag("яb")).parse(input).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 3, actual: Some('x') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 3, found_char: Some('x') });
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 
@@ -31,7 +33,7 @@ fn incomplete_match_reports_end_of_input() {
     let error = lookup(tag("ab")).parse(ParserInput::new("a")).unwrap_err();
 
     assert_eq!(error.byte_position(), 1);
-    assert_eq!(error.location().actual, None);
+    assert_eq!(error.location().found_char, None);
 }
 
 #[test]

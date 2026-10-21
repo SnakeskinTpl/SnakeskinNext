@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -45,9 +47,9 @@ fn second_error_keeps_its_source_position_and_expectation() {
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 
-    assert_eq!(error.location().start, 2);
+    assert_eq!(error.location().start_byte, 2);
     assert_eq!(error.expected_tag, "ab");
-    assert_eq!(error.location().actual, Some('x'));
+    assert_eq!(error.location().found_char, Some('x'));
 }
 
 #[derive(Debug, Clone, PartialEq)]

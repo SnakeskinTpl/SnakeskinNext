@@ -18,9 +18,9 @@ impl TagError {
 
 impl Display for TagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.location.actual {
-            Some(actual) => write!(f, "At byte position {}, expected character {:?} of tag {:?}, got {:?}", self.location.byte_position, self.expected, self.expected_tag, actual),
-            None => write!(f, "At byte position {}, expected character {:?} of tag {:?}, reached end of input", self.location.byte_position, self.expected, self.expected_tag),
+        match self.location.found_char {
+            Some(actual) => write!(f, "At byte position {}, expected character {:?} of tag {:?}, got {:?}", self.location.failure_byte, self.expected, self.expected_tag, actual),
+            None => write!(f, "At byte position {}, expected character {:?} of tag {:?}, reached end of input", self.location.failure_byte, self.expected, self.expected_tag),
         }
     }
 }

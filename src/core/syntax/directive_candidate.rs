@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use crate::parsec::*;
+use crate::parsec::{choice, flat_map, map, opt, seq, state, tag, take, Parser};
 use crate::seq;
 
 #[cfg(test)]

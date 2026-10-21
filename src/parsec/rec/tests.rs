@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::parsec::*;
+
 use super::*;
 
 // expression = "x" | "(" expression ")"
@@ -34,7 +36,7 @@ fn recursive_grammar_reports_missing_closing_parenthesis() {
     let error = expression().parse(ParserInput::new("((x)")).unwrap_err();
 
     assert_eq!(error.byte_position(), 4);
-    assert_eq!(error.location().actual, None);
+    assert_eq!(error.location().found_char, None);
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 
@@ -46,7 +48,7 @@ fn recursive_grammar_reports_invalid_inner_expression() {
     let error = expression().parse(ParserInput::new("(z)")).unwrap_err();
 
     assert_eq!(error.byte_position(), 1);
-    assert_eq!(error.location().actual, Some('z'));
+    assert_eq!(error.location().found_char, Some('z'));
 }
 
 #[test]

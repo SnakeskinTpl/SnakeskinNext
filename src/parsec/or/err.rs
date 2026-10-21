@@ -30,7 +30,7 @@ pub struct AlternativeError {
 impl AlternativeError {
     pub fn new(start: usize, first: Box<dyn ParseError>, second: Box<dyn ParseError>) -> Box<Self> {
         assert_eq!(first.byte_position(), second.byte_position());
-        let location = ErrorLocation { start, ..*first.location() };
+        let location = ErrorLocation { start_byte: start, ..*first.location() };
         Box::new(Self { location, first, second })
     }
 }

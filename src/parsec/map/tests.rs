@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]

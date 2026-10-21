@@ -19,7 +19,7 @@ impl TakeMatchError {
 
 impl Display for TakeMatchError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "At byte position {}, expected at least {} characters passing parser checks, matched {}", self.location.byte_position, self.min, self.matched)?;
+        write!(f, "At byte position {}, expected at least {} characters passing parser checks, matched {}", self.location.failure_byte, self.min, self.matched)?;
 
         match &self.cause {
             Some(cause) => write!(f, ": {}", cause),

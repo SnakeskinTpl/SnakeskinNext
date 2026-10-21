@@ -1,4 +1,4 @@
-use super::*;
+use super::{Parser, ParserInput, ParserResult};
 
 #[cfg(test)]
 mod tests;

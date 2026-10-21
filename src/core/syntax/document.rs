@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::parsec::*;
+use crate::parsec::{choice, cut, lookup, map, not, repeat, seq, state, tag, take, take_match, Parser};
 
 use super::directive_candidate::{classic_directive_candidate, classic_directive_start, DirectiveCandidate};
 

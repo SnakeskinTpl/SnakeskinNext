@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -65,9 +67,9 @@ fn failure_preserves_inner_error_after_skipped_whitespace() {
             .unwrap_err();
 
         assert_eq!(*error.location(), ErrorLocation {
-            start: 2,
-            byte_position: 2,
-            actual: source[2..].chars().next(),
+            start_byte: 2,
+            failure_byte: 2,
+            found_char: source[2..].chars().next(),
         });
 
         let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();

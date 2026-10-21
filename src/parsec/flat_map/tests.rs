@@ -1,5 +1,7 @@
 use std::cell::Cell;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -21,7 +23,7 @@ fn callback_error_is_propagated() {
 
     let error = parser.parse(ParserInput::new("ax")).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 1, actual: Some('x') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 1, found_char: Some('x') });
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<TagError>().unwrap();
 

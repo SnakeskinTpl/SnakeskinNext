@@ -1,5 +1,7 @@
 use std::ops::Bound;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -77,7 +79,7 @@ fn insufficient_input_at_eof_has_no_check_cause() {
     let error = take_match(succeed(), 2..).parse(ParserInput::new("я")).unwrap_err();
 
     assert_eq!(error.byte_position(), 2);
-    assert_eq!(error.location().actual, None);
+    assert_eq!(error.location().found_char, None);
     assert!(error.source().is_none());
 }
 

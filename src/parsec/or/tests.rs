@@ -1,3 +1,5 @@
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -9,12 +11,12 @@ fn alternative_location_covers_whole_choice_and_preserves_branch_starts() {
 
     let error = or(first, second).parse(input).unwrap_err();
 
-    assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 3, actual: Some('X') });
+    assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 3, found_char: Some('X') });
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<AlternativeError>().unwrap();
 
-    assert_eq!(error.first.location().start, 2);
-    assert_eq!(error.second.location().start, 3);
+    assert_eq!(error.first.location().start_byte, 2);
+    assert_eq!(error.second.location().start_byte, 3);
 }
 
 #[test]
@@ -56,7 +58,7 @@ fn equal_positions_preserve_both_errors() {
     let error = or(tag("if"), tag("include")).parse(ParserInput::new("ix")).unwrap_err();
 
     assert_eq!(error.byte_position(), 1);
-    assert_eq!(error.location().actual, Some('x'));
+    assert_eq!(error.location().found_char, Some('x'));
 
     let error = (&*error as &dyn std::error::Error).downcast_ref::<AlternativeError>().unwrap();
 

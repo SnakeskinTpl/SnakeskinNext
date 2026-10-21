@@ -50,10 +50,10 @@ mod tests;
 /// Source context for a parser failure; all offsets are measured in bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ErrorLocation {
-    pub start: usize,
-    pub byte_position: usize,
-    /// Character at the failure position, or None at end of input.
-    pub actual: Option<char>,
+    pub start_byte: usize,
+    pub failure_byte: usize,
+    /// Character at failure_byte, or None at end of input.
+    pub found_char: Option<char>,
 }
 
 pub trait ParseError: Error {
@@ -66,7 +66,7 @@ pub trait ParseError: Error {
 
     /// Byte offset in the source where parsing failed.
     fn byte_position(&self) -> usize {
-        self.location().byte_position
+        self.location().failure_byte
     }
 }
 

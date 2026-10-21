@@ -1,4 +1,4 @@
-use super::*;
+use super::{Parser, ParserInput, ParserResult};
 use super::or::select_error;
 
 #[cfg(test)]

@@ -1,5 +1,7 @@
 use std::ops::Bound;
 
+use crate::parsec::*;
+
 use super::*;
 
 #[test]
@@ -10,8 +12,8 @@ fn error_exposes_location_and_match_count() {
 
         let error = take(|ch, _| ch.is_alphabetic(), 2..).parse(input).unwrap_err();
 
-        assert_eq!(*error.location(), ErrorLocation { start: 1, byte_position: 3, actual });
-        assert_eq!(error.byte_position(), error.location().byte_position);
+        assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 3, found_char: actual });
+        assert_eq!(error.byte_position(), error.location().failure_byte);
 
         let error = (&*error as &dyn std::error::Error).downcast_ref::<TakeError>().unwrap();
 

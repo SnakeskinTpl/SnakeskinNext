@@ -86,7 +86,7 @@ fn nested_repeat_propagates_non_recoverable_error_regardless_of_minimum() {
 
 #[test]
 fn error_wrappers_preserve_non_recoverable_classification() {
-    let location = ErrorLocation { start: 0, byte_position: 0, actual: Some('x') };
+    let location = ErrorLocation { start_byte: 0, failure_byte: 0, found_char: Some('x') };
     let mismatch = || TagError::new(location, "a", 'a');
     let fatal = || RepeatError::no_progress(location);
 
