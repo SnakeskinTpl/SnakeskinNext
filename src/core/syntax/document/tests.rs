@@ -252,6 +252,7 @@ fn jade_like_ends_close_siblings_ancestors_and_eof_in_stack_order() {
         (false, 22..27, 22..27),
         (true, 27..27, 22..27),
     ]);
+
     assert!(remaining.is_at_end());
 }
 
@@ -286,6 +287,7 @@ fn multiline_body_does_not_close_its_directive_on_internal_dedent() {
         (next_start..next_start, 0.."- outer".len()),
         (source.len()..source.len(), next_start..source.len()),
     ]);
+
     assert!(remaining.is_at_end());
 }
 
@@ -306,6 +308,7 @@ fn nested_directives_close_at_eof_after_trailing_crlf() {
         (source.len()..source.len(), inner_start..inner_end),
         (source.len()..source.len(), 0.."- outer".len()),
     ]);
+
     assert!(remaining.is_at_end());
 }
 

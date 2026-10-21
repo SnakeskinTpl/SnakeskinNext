@@ -11,6 +11,7 @@
 - Keep comments short and focused on contracts or behavior that is not obvious from the code.
 - Format long parser combinator compositions across multiple lines, placing arguments on separate lines and indenting nested calls to make the grammar easy to read. Keep short expressions compact.
 - Treat tests as documentation: separate setup, actions, assertions, and distinct scenario steps with blank lines.
+- Separate a multiline assertion from the following assertion with a blank line.
 - Prefer meaningful behavioral tests, including boundary cases and interactions between combinators. Avoid tests that merely repeat implementation details.
 - Keep public re-exports explicit rather than using wildcard re-exports in the public facade.
 - Follow the surrounding naming and API conventions. Keep unrelated changes out of the task.
