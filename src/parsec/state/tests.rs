@@ -68,7 +68,7 @@ fn callback_error_preserves_context_and_recoverability() {
 #[test]
 fn local_counter_tracks_nested_braces() {
     let parser = state(|| Cell::new(0usize), |depth, input| {
-        let content = take(|ch, escaped| {
+        let content = take(|ch, escaped, _| {
             if escaped {
                 return true;
             }

@@ -2,6 +2,27 @@ use std::any::Any;
 
 use super::{ParserInput, ParserState};
 
+#[test]
+fn start_predicate_tracks_cursor_including_rewind_and_empty_input() {
+    let empty = ParserInput::new("");
+
+    assert!(empty.is_at_start());
+    assert!(empty.is_at_end());
+
+    let mut input = ParserInput::new("я");
+
+    assert!(input.is_at_start());
+
+    input.next();
+
+    assert!(!input.is_at_start());
+    assert!(input.is_at_end());
+
+    input.set_byte_position(0);
+
+    assert!(input.is_at_start());
+}
+
 #[derive(Clone, Debug, PartialEq)]
 struct TextState(String);
 
@@ -52,13 +73,13 @@ fn empty_input_stays_at_end() {
 fn unicode_iteration_tracks_byte_positions_and_peek_does_not_advance() {
     let mut input = ParserInput::new("aя€🦀");
 
-    for (ch, start, end) in [('a', 0, 1), ('я', 1, 3), ('€', 3, 6), ('🦀', 6, 10)] {
+    for (ch, start_byte, end) in [('a', 0, 1), ('я', 1, 3), ('€', 3, 6), ('🦀', 6, 10)] {
         assert!(!input.is_at_end());
-        assert_eq!(input.byte_position(), start);
+        assert_eq!(input.byte_position(), start_byte);
 
         assert_eq!(input.peek(), Some(ch));
         assert_eq!(input.peek(), Some(ch));
-        assert_eq!(input.byte_position(), start);
+        assert_eq!(input.byte_position(), start_byte);
 
         assert_eq!(input.next(), Some(ch));
         assert_eq!(input.byte_position(), end);

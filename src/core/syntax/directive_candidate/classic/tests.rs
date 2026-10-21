@@ -5,8 +5,9 @@ use super::*;
 #[test]
 fn directive_start_consumes_only_opening_marker() {
     for (source, expected_position) in [("{foo", 1), ("#{foo", 2), ("{}", 1)] {
-        let ((), remaining) = classic_directive_start().parse(ParserInput::new(source)).unwrap();
+        let (extended, remaining) = classic_directive_start().parse(ParserInput::new(source)).unwrap();
 
+        assert_eq!(extended, source.starts_with('#'));
         assert_eq!(remaining.byte_position(), expected_position);
         assert_eq!(remaining.peek(), source[expected_position..].chars().next());
     }
@@ -59,6 +60,8 @@ fn optional_hash_prefix_preserves_content_and_remaining_input() {
         assert_eq!(directive.name, Some("foo"));
         assert_eq!(directive.body, "bar");
         assert_eq!(directive.content, "foo bar");
+        assert_eq!(directive.form, DirectiveForm::Classic);
+        assert_eq!(directive.extended, source.starts_with('#'));
         assert_eq!(remaining.byte_position(), source.find('}').unwrap() + 1);
         assert_eq!(remaining.peek(), Some('r'));
     }

@@ -5,15 +5,15 @@ use super::*;
 #[test]
 fn skips_leading_whitespace_and_preserves_trailing_whitespace() {
     let source = " \t\r\n\u{a0}\u{2003}я \n";
-    let start = source.find('я').unwrap();
+    let start_byte = source.find('я').unwrap();
 
     let (output, remaining) = ltrim(tag("я"))
         .parse(ParserInput::new(source))
         .unwrap();
 
     assert_eq!(output, "я");
-    assert_eq!(output.as_ptr(), source[start..].as_ptr());
-    assert_eq!(remaining.byte_position(), start + "я".len());
+    assert_eq!(output.as_ptr(), source[start_byte..].as_ptr());
+    assert_eq!(remaining.byte_position(), start_byte + "я".len());
     assert_eq!(remaining.peek(), Some(' '));
 }
 

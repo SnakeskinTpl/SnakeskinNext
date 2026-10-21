@@ -3,7 +3,7 @@ use std::error::Error;
 mod tag;
 pub use tag::{tag, succeed, Tag, TagError};
 mod take;
-pub use take::{take, Take, TakeError};
+pub use take::{take, try_take, TakeError, TryTake};
 mod take_match;
 pub use take_match::{take_match, TakeMatch, TakeMatchError};
 mod utils;
@@ -28,6 +28,8 @@ mod not;
 pub use not::{not, Not, NotError};
 mod cut;
 pub use cut::{cut, Cut, CutError};
+mod anchor;
+pub use anchor::{start_of_input, line_start, StartOfInput, StartOfInputError, LineStartError};
 
 mod rec;
 pub use rec::{rec, Rec};
@@ -37,6 +39,8 @@ mod map;
 pub use map::{map, Map};
 mod state;
 pub use state::{state, State};
+mod parser;
+pub use parser::{parser, ParserFn};
 
 mod err;
 pub use err::DataError;

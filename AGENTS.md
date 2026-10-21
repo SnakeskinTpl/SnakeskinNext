@@ -9,6 +9,7 @@
 
 - Order file headers consistently: imports first (standard library, external crates, crate-local paths, relative paths), then child modules with their re-exports, then the conditional test module. Separate import groups with blank lines.
 - Keep comments short and focused on contracts or behavior that is not obvious from the code.
+- Format long parser combinator compositions across multiple lines, placing arguments on separate lines and indenting nested calls to make the grammar easy to read. Keep short expressions compact.
 - Treat tests as documentation: separate setup, actions, assertions, and distinct scenario steps with blank lines.
 - Prefer meaningful behavioral tests, including boundary cases and interactions between combinators. Avoid tests that merely repeat implementation details.
 - Keep public re-exports explicit rather than using wildcard re-exports in the public facade.

@@ -1,7 +1,7 @@
 use std::ops::{Bound, RangeBounds};
 
 /// Returns inclusive count bounds, or None for an empty or unrepresentable range.
-pub(super) fn count_bounds(range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
+pub(crate) fn count_bounds(range: impl RangeBounds<usize>) -> Option<(usize, usize)> {
     let min = match range.start_bound() {
         Bound::Unbounded => 0,
         Bound::Included(&value) => value,

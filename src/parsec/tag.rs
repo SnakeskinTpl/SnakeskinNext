@@ -25,19 +25,19 @@ impl<'a, T: AsRef<str>> Parser<'a> for Tag<T> {
 
     fn parse(&self, mut input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
         let tag = self.0.as_ref();
-        let start = input.byte_position();
+        let start_byte = input.byte_position();
 
         for expected in tag.chars() {
             let actual = input.peek();
 
             if actual != Some(expected) {
-                let location = ErrorLocation { start_byte: start, failure_byte: input.byte_position(), found_char: actual };
+                let location = ErrorLocation { start_byte, failure_byte: input.byte_position(), found_char: actual };
                 return Err(TagError::new(location, tag, expected));
             }
 
             input.next();
         }
 
-        Ok((input.source_slice(start..input.byte_position()), input))
+        Ok((input.source_slice(start_byte..input.byte_position()), input))
     }
 }

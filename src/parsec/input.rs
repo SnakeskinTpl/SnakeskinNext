@@ -55,6 +55,10 @@ impl<'a> ParserInput<'a> {
         &self.source[range]
     }
 
+    pub fn is_at_start(&self) -> bool {
+        self.byte_pos == 0
+    }
+
     pub fn is_at_end(&self) -> bool {
         self.byte_pos >= self.source.len()
     }

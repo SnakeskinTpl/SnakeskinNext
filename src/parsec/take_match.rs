@@ -30,7 +30,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
     type Output = &'a str;
 
     fn parse(&self, mut input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
-        let start = input.byte_position();
+        let start_byte = input.byte_position();
         let mut count = 0usize;
 
         while
@@ -44,7 +44,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
                 }
                 Err(cause) if !cause.is_recoverable() => return Err(cause),
                 Err(cause) if count < self.min => {
-                    let location = ErrorLocation { start_byte: start, failure_byte: input.byte_position(), found_char: input.peek() };
+                    let location = ErrorLocation { start_byte, failure_byte: input.byte_position(), found_char: input.peek() };
                     return Err(TakeMatchError::new(location, self.min, count, Some(cause)));
                 }
                 Err(_) => break,
@@ -53,7 +53,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
 
         if count < self.min {
             let location = ErrorLocation {
-                start_byte: start,
+                start_byte,
                 failure_byte: input.byte_position(),
                 found_char: input.peek(),
             };
@@ -61,6 +61,6 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
             return Err(TakeMatchError::new(location, self.min, count, None));
         }
 
-        Ok((input.source_slice(start..input.byte_position()), input))
+        Ok((input.source_slice(start_byte..input.byte_position()), input))
     }
 }

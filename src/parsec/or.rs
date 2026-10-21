@@ -2,7 +2,7 @@ use super::{Parser, ParserInput, ParserResult};
 
 mod err;
 pub use err::AlternativeError;
-pub(super) use err::select_error;
+pub(crate) use err::select_error;
 
 #[cfg(test)]
 mod tests;
@@ -48,7 +48,7 @@ impl<'a, A: Parser<'a>, B: Parser<'a>> Parser<'a> for Or<A, B> {
     type Output = Either<A::Output, B::Output>;
 
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
-        let start = input.byte_position();
+        let start_byte = input.byte_position();
         match self.0.parse(input.clone()) {
             Ok((output, remaining)) => {
                 let output = Either::Left(output);
@@ -59,7 +59,7 @@ impl<'a, A: Parser<'a>, B: Parser<'a>> Parser<'a> for Or<A, B> {
             Err(first) => {
                 match self.1.parse(input) {
                     Ok((output, remaining)) => Ok((Either::Right(output), remaining)),
-                    Err(second) => Err(select_error(start, first, second)),
+                    Err(second) => Err(select_error(start_byte, first, second)),
                 }
             },
         }

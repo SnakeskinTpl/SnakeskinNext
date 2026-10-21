@@ -14,7 +14,6 @@ mod tests;
 /// Panics if the range contains no representable repetition count.
 pub fn repeat<'a, P: Parser<'a>>(parser: P, range: impl RangeBounds<usize>) -> Repeat<P> {
     let (min, max) = utils::count_bounds(range).expect("Invalid repetition range");
-
     Repeat { parser, min, max }
 }
 
@@ -29,7 +28,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for Repeat<P> {
     type Output = Vec<P::Output>;
 
     fn parse(&self, mut input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
-        let start = input.byte_position();
+        let start_byte = input.byte_position();
         let mut count = 0usize;
 
         let mut result = Vec::new();
@@ -39,7 +38,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for Repeat<P> {
                 Ok(result) => result,
                 Err(cause) if !cause.is_recoverable() => return Err(cause),
                 Err(cause) if count < self.min => {
-                    let location = ErrorLocation { start_byte: start, ..*cause.location() };
+                    let location = ErrorLocation { start_byte, ..*cause.location() };
                     return Err(RepeatError::insufficient_matches(location, self.min, count, cause));
                 }
                 Err(_) => break,
@@ -47,7 +46,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for Repeat<P> {
 
             // Reject non-progressing parsers to prevent unbounded repetition.
             if remaining.byte_position() <= input.byte_position() {
-                return Err(RepeatError::no_progress(ErrorLocation { start_byte: start, failure_byte: input.byte_position(), found_char: input.peek() }));
+                return Err(RepeatError::no_progress(ErrorLocation { start_byte, failure_byte: input.byte_position(), found_char: input.peek() }));
             }
 
             result.push(output);

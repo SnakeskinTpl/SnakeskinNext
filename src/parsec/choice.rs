@@ -46,11 +46,11 @@ where
     type Output = O;
 
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
-        let start = input.byte_position();
+        let start_byte = input.byte_position();
         match self.0.parse(input.clone()) {
             Ok(result) => Ok(result),
             Err(first) if !first.is_recoverable() => Err(first),
-            Err(first) => self.1.parse(input).map_err(|second| select_error(start, first, second)),
+            Err(first) => self.1.parse(input).map_err(|second| select_error(start_byte, first, second)),
         }
     }
 }

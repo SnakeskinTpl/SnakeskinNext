@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 use crate::parsec::{ErrorLocation, ParseError};
 
 /// Prioritizes non-recoverable errors, then distance, preserving ties.
-pub(in crate::parsec) fn select_error(start: usize, first: Box<dyn ParseError>, second: Box<dyn ParseError>) -> Box<dyn ParseError> {
+pub(crate) fn select_error(start_byte: usize, first: Box<dyn ParseError>, second: Box<dyn ParseError>) -> Box<dyn ParseError> {
     if !first.is_recoverable() {
         return first;
     }
@@ -15,7 +15,7 @@ pub(in crate::parsec) fn select_error(start: usize, first: Box<dyn ParseError>, 
     match first.byte_position().cmp(&second.byte_position()) {
         std::cmp::Ordering::Greater => first,
         std::cmp::Ordering::Less => second,
-        std::cmp::Ordering::Equal => AlternativeError::new(start, first, second),
+        std::cmp::Ordering::Equal => AlternativeError::new(start_byte, first, second),
     }
 }
 
@@ -28,9 +28,9 @@ pub struct AlternativeError {
 }
 
 impl AlternativeError {
-    pub fn new(start: usize, first: Box<dyn ParseError>, second: Box<dyn ParseError>) -> Box<Self> {
+    pub fn new(start_byte: usize, first: Box<dyn ParseError>, second: Box<dyn ParseError>) -> Box<Self> {
         assert_eq!(first.byte_position(), second.byte_position());
-        let location = ErrorLocation { start_byte: start, ..*first.location() };
+        let location = ErrorLocation { start_byte, ..*first.location() };
         Box::new(Self { location, first, second })
     }
 }
