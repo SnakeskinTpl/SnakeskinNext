@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use crate::parsec::{choice, map, opt, seq, state, tag, take, Parser};
+use crate::parsec::{choice, map, opt, parser, seq, state, tag, take, Parser};
 use crate::seq;
 
 use super::name::directive_name;
@@ -16,7 +16,7 @@ pub(crate) fn classic_directive_start<'a>() -> impl Parser<'a, Output = bool> {
 }
 
 pub(crate) fn classic_directive_candidate<'a>() -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
-    let content = state(|| (), |_, input| {
+    let content = parser(|input| {
         let start_byte = input.byte_position();
         let parser = choice(
             map(seq(directive_name(), body(0)), |(name, body)| (Some(name), body)),
@@ -51,11 +51,14 @@ fn body<'a>(min: usize) -> impl Parser<'a, Output = &'a str> {
                     depth.set(depth.get() + 1);
                     true
                 }
+
                 '}' if depth.get() == 0 => false,
+
                 '}' => {
                     depth.set(depth.get() - 1);
                     true
                 }
+
                 _ => true,
             }
         }, min..).parse(input)

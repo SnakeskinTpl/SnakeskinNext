@@ -1,7 +1,8 @@
 use std::cell::RefCell;
 use std::ops::Range;
 
-use crate::parsec::{choice, cut, flat_map, line_start, lookup, map, not, parser, repeat, seq, state, tag, take, take_match, Parser};
+use crate::{choice, seq};
+use crate::parsec::{choice, cut, flat_map, line_break, line_indent, line_start, lookup, map, not, opt, parser, repeat, seq, state, tag, take, take_match, Parser};
 
 use super::directive_candidate::{classic_directive_candidate, classic_directive_start, jade_like_directive_candidate, jade_like_directive_start, DirectiveCandidate};
 
@@ -36,13 +37,13 @@ pub(crate) enum SyntaxNode<'a> {
 /// Parses a flat document in braced and JadeLike syntax, preserving text and byte ranges.
 /// A recognized opening commits to directive parsing, so malformed input is not hidden.
 /// JadeLike directives close before a sibling or ancestor directive, or at end of input.
-/// Text and classic directives do not change the indentation stack.
+/// Nonblank text lines also close directives according to their indentation.
 pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
     state(|| RefCell::new(DocumentState::default()), |document, input| {
         let classic = parser(|input| {
             let start_byte = input.byte_position();
 
-            let parser = seq(
+            let parser = seq!(
                 lookup(classic_candidate_start()),
                 cut(classic_directive_candidate())
             );
@@ -62,8 +63,6 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
             let span = start_byte..remaining.byte_position();
             let mut document = document.borrow_mut();
 
-            document.close_at(start_byte, Some(indent.len()));
-
             document.open_directives.push(OpenDirective {
                 indent_len: indent.len(),
                 opening_span: span.clone(),
@@ -76,19 +75,54 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
 
         let text = parser(|input| {
             let start_byte = input.byte_position();
-            let (content, remaining) = take_match(not(candidate_start()), 1..).parse(input)?;
-            let span = start_byte..remaining.byte_position();
 
-            document.borrow_mut().children.push(SyntaxNode::Text { span, content });
+            let line_content = take_match(
+                not(choice(
+                    candidate_start(),
+                    map(line_break(), |_| ())
+                )),
+                1..
+            );
+
+            let text_fragment = choice(
+                map(seq(line_content, opt(line_break())), |_| ()),
+                map(line_break(), |_| ())
+            );
+
+            let (_, remaining) = text_fragment.parse(input)?;
+
+            let end_byte = remaining.byte_position();
+            let mut document = document.borrow_mut();
+
+            // Merge adjacent text fragments while preserving inferred ends between them.
+            if let Some(SyntaxNode::Text { span, content }) = document.children.last_mut() {
+                span.end = end_byte;
+                *content = remaining.source_slice(span.clone());
+
+            } else {
+                let span = start_byte..end_byte;
+                let content = remaining.source_slice(span.clone());
+
+                document.children.push(SyntaxNode::Text { span, content });
+            }
 
             Ok(((), remaining))
         });
 
+        let node = choice!(classic, jade_like, text);
+
         let nodes = repeat(
-            choice(
-                choice(classic, jade_like),
-                text
-            ),
+            parser(|input| {
+                let start_byte = input.byte_position();
+                let (indent, _) = opt(line_indent()).parse(input.clone())?;
+
+                if let Some(indent) = indent {
+                    document.borrow_mut().close_at(start_byte, Some(indent.len()));
+                }
+
+                node.parse(input)
+            }),
+
             0..
         );
 
@@ -150,10 +184,11 @@ fn jade_like_line_start<'a>() -> impl Parser<'a, Output = &'a str> {
     let indent = take(|ch, _, _| ch == ' ' || ch == '\t', 0..);
 
     map(
-        seq(
+        seq!(
             line_start(),
-            seq(indent, lookup(jade_like_directive_start()))
+            indent,
+            lookup(jade_like_directive_start())
         ),
-        |((), (indent, ()))| indent,
+        |(((), indent), ())| indent,
     )
 }

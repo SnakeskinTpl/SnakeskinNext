@@ -3,6 +3,118 @@ use crate::parsec::*;
 use super::*;
 
 #[test]
+fn classic_directive_after_blank_line_closes_jade_like_block() {
+    let source = "- if foo > 2\n  ...\n\n{bla}";
+    let classic_start = source.find("{bla}").unwrap();
+
+    let (tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
+
+    assert_eq!(tree.children.len(), 4);
+    assert!(matches!(&tree.children[1], SyntaxNode::Text { content, .. }
+        if *content == "\n  ...\n\n"));
+    assert!(matches!(&tree.children[2], SyntaxNode::ImplicitEnd { span, opening_span }
+        if *span == (classic_start..classic_start) && *opening_span == (0..12)));
+    assert!(matches!(&tree.children[3], SyntaxNode::Directive { span, .. }
+        if *span == (classic_start..source.len())));
+    assert!(remaining.is_at_end());
+}
+
+#[test]
+fn classic_directive_at_line_start_uses_the_same_indentation_rule() {
+    let source = "- outer\n  - inner\n  {foo}";
+    let line_start = source.find("  {foo}").unwrap();
+    let classic_start = source.find("{foo}").unwrap();
+
+    let (tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
+
+    let ends: Vec<_> = tree.children.iter().filter_map(|node| match node {
+        SyntaxNode::ImplicitEnd { span, opening_span } => Some((span.clone(), opening_span.clone())),
+        _ => None,
+    }).collect();
+
+    assert_eq!(ends, vec![
+        (line_start..line_start, 8..17),
+        (source.len()..source.len(), 0..7),
+    ]);
+
+    let end_index = tree.children.iter().position(|node| {
+        matches!(node, SyntaxNode::ImplicitEnd { span, .. } if span.start == line_start)
+    }).unwrap();
+
+    assert!(matches!(&tree.children[end_index + 1], SyntaxNode::Text { span, content }
+        if *span == (line_start..classic_start) && *content == "  "));
+    assert!(matches!(&tree.children[end_index + 2], SyntaxNode::Directive { span, .. }
+        if *span == (classic_start..source.len())));
+    assert!(remaining.is_at_end());
+}
+
+#[test]
+fn text_dedent_closes_nested_directives_and_preserves_source_slices() {
+    let source = "- outer\n  - inner\n    inside\n  sibling\noutside";
+    let sibling_start = source.find("  sibling").unwrap();
+    let outside_start = source.find("outside").unwrap();
+
+    let (tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
+
+    let ends: Vec<_> = tree.children.iter().filter_map(|node| match node {
+        SyntaxNode::ImplicitEnd { span, opening_span } => Some((span.clone(), opening_span.clone())),
+        _ => None,
+    }).collect();
+
+    assert_eq!(ends, vec![
+        (sibling_start..sibling_start, 8..17),
+        (outside_start..outside_start, 0..7),
+    ]);
+
+    let mut end = 0;
+    for node in &tree.children {
+        let span = match node {
+            SyntaxNode::Text { span, content } => {
+                assert_eq!(*content, &source[span.clone()]);
+                assert_eq!(content.as_ptr(), source[span.clone()].as_ptr());
+                span
+            }
+            SyntaxNode::Directive { span, .. } | SyntaxNode::ImplicitEnd { span, .. } => span,
+        };
+
+        assert_eq!(span.start, end);
+        end = span.end;
+    }
+
+    assert_eq!(end, source.len());
+    assert!(remaining.is_at_end());
+}
+
+#[test]
+fn blank_lines_and_deeper_tabbed_text_keep_directive_open() {
+    let source = "- outer\r\n\r\n \t\r\n\tinside\r\n";
+
+    let (tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
+
+    assert_eq!(tree.children.len(), 3);
+    assert!(matches!(&tree.children[1], SyntaxNode::Text { content, .. }
+        if *content == "\r\n\r\n \t\r\n\tinside\r\n"));
+    assert!(matches!(&tree.children[2], SyntaxNode::ImplicitEnd { span, .. }
+        if *span == (source.len()..source.len())));
+    assert!(remaining.is_at_end());
+}
+
+#[test]
+fn inline_text_after_classic_directive_does_not_act_as_a_line_start() {
+    let source = "- outer\n  {foo}inline\n  inside";
+
+    let (tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
+
+    let ends: Vec<_> = tree.children.iter().filter_map(|node| match node {
+        SyntaxNode::ImplicitEnd { span, .. } => Some(span.clone()),
+        _ => None,
+    }).collect();
+
+    assert_eq!(ends, vec![source.len()..source.len()]);
+    assert!(remaining.is_at_end());
+}
+
+#[test]
 fn mixed_document_preserves_node_boundaries_and_multiline_bodies() {
     let source = r##"Привет {foo}
   - bar [
@@ -19,11 +131,13 @@ text - inline #{baz}
         (true, "{foo}"),
         (false, "\n"),
         (true, "  - bar [\n    {nested: \"}\"}\n  ]"),
-        (false, "\ntext - inline "),
+        (false, "\n"),
+        (false, "text - inline "),
         (true, "#{baz}"),
         (false, "\n"),
         (true, "  # output &\n    continued text\n    ."),
-        (false, "\nКонец {}"),
+        (false, "\n"),
+        (false, "Конец {}"),
     ];
 
     let (mut tree, remaining) = document().parse(ParserInput::new(source)).unwrap();
@@ -68,11 +182,12 @@ fn jade_like_directives_are_recognized_on_first_and_indented_lines() {
     // These assertions cover source nodes; inferred ends have empty ranges.
     tree.children.retain(|node| !matches!(node, SyntaxNode::ImplicitEnd { .. }));
 
-    assert_eq!(tree.children.len(), 4);
+    assert_eq!(tree.children.len(), 5);
     assert!(matches!(&tree.children[0], SyntaxNode::Directive { span, .. } if &source[span.clone()] == "- foo"));
     assert!(matches!(&tree.children[1], SyntaxNode::Text { content, .. } if *content == "\n"));
     assert!(matches!(&tree.children[2], SyntaxNode::Directive { span, .. } if &source[span.clone()] == " \t# bar value"));
-    assert!(matches!(&tree.children[3], SyntaxNode::Text { content, .. } if *content == "\r\ntext"));
+    assert!(matches!(&tree.children[3], SyntaxNode::Text { content, .. } if *content == "\r\n"));
+    assert!(matches!(&tree.children[4], SyntaxNode::Text { content, .. } if *content == "text"));
     assert!(remaining.is_at_end());
 }
 
