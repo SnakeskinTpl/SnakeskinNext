@@ -8,7 +8,7 @@ use crate::core::syntax::json::{json, JsonKind, JsonValue};
 use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation, ParseError};
 
-use super::{AncestorRules, Directive, DirectiveContext, DirectiveDefinition, DirectiveResult};
+use super::{Directive, DirectiveContext, DirectiveDefinition, DirectiveResult};
 
 mod err;
 use err::{DuplicateShorthandError, ShorthandConfigError};
@@ -25,14 +25,9 @@ impl Shorthand {
         Self {
             definition: DirectiveDefinition {
                 name: "shorthand",
-                block: false,
                 requires_body: true,
-                allows_self_nesting: false,
-                groups: vec![],
-                allowed_parents: None,
                 allowed_children: Some(vec![]),
-                ancestors: AncestorRules { allowed: None, forbidden: vec![] },
-                continues: vec![],
+                ..Default::default()
             },
         }
     }

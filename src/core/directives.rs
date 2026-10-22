@@ -24,7 +24,7 @@ pub(crate) trait Directive {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct DirectiveDefinition<'a> {
     pub name: &'a str,
 
@@ -51,7 +51,7 @@ pub(crate) enum DirectiveSelector<'a> {
     Group(&'a str),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct AncestorRules<'a> {
     /// None imposes no ancestor requirement.
     pub allowed: Option<Vec<DirectiveSelector<'a>>>,
