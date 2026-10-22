@@ -26,7 +26,6 @@ impl Shorthand {
             definition: DirectiveDefinition {
                 name: "shorthand",
                 requires_body: true,
-                allowed_children: Some(vec![]),
                 ..Default::default()
             },
         }
