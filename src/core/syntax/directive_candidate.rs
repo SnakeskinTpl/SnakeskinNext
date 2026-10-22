@@ -9,12 +9,12 @@ mod name;
 /// A syntactic candidate; name and body remain tentative until directive resolution.
 #[derive(Debug)]
 pub(crate) struct DirectiveCandidate<'a> {
-    form: DirectiveForm<'a>,
-    extended: bool,
-    name: Option<&'a str>,
-    body: &'a str,
-    /// Original content between braces, before name or shorthand resolution.
-    content: &'a str,
+    pub form: DirectiveForm<'a>,
+    pub extended: bool,
+    pub name: Option<&'a str>,
+    pub body: &'a str,
+    /// Original directive content, before name or shorthand resolution.
+    pub content: &'a str,
 }
 
 #[derive(Debug, PartialEq)]
