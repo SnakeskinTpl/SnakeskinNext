@@ -8,13 +8,13 @@ mod take_match;
 pub use take_match::{take_match, TakeMatch, TakeMatchError};
 mod utils;
 
-mod ltrim;
-pub use ltrim::{ltrim, LTrim};
+mod whitespace;
+pub use whitespace::{whitespace, ltrim, ltrim1};
 
 mod seq;
 pub use seq::{seq, Seq};
 mod or;
-pub use or::{or, Or, Either, AlternativeError};
+pub use or::{or, Either, AlternativeError};
 mod choice;
 pub use choice::{choice, Choice};
 
@@ -38,7 +38,9 @@ pub use rec::{rec, Rec};
 mod flat_map;
 pub use flat_map::{flat_map, FlatMap};
 mod map;
-pub use map::{map, Map};
+pub use map::map;
+mod span;
+pub use span::{spanned, recognize};
 mod state;
 pub use state::{state, State};
 mod parser;

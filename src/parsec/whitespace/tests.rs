@@ -3,6 +3,50 @@ use crate::parsec::*;
 use super::*;
 
 #[test]
+fn required_trim_skips_unicode_whitespace_and_preserves_inner_output() {
+    let source = "! \t\r\n\u{2003}value ";
+    let mut input = ParserInput::new(source);
+    input.set_byte_position(1);
+
+    let (output, remaining) = ltrim1(tag("value")).parse(input).unwrap();
+
+    assert_eq!(output, "value");
+    assert_eq!(output.as_ptr(), source[source.find("value").unwrap()..].as_ptr());
+    assert_eq!(remaining.peek(), Some(' '));
+}
+
+#[test]
+fn required_trim_does_not_call_inner_parser_without_a_separator() {
+    for source in ["", "value"] {
+        let called = std::cell::Cell::new(false);
+        let inner = parser(|input| {
+            called.set(true);
+            Ok(((), input))
+        });
+
+        let error = ltrim1(inner).parse(ParserInput::new(source)).unwrap_err();
+
+        assert!(error.is_recoverable());
+        assert_eq!(error.byte_position(), 0);
+        assert!(!called.get());
+    }
+}
+
+#[test]
+fn required_trim_allows_empty_inner_success_and_preserves_inner_errors() {
+    let (output, remaining) = ltrim1(succeed()).parse(ParserInput::new(" \n")).unwrap();
+
+    assert_eq!(output, "");
+    assert!(remaining.is_at_end());
+
+    let error = ltrim1(tag("value")).parse(ParserInput::new(" \tx")).unwrap_err();
+
+    assert_eq!(error.byte_position(), 2);
+    assert_eq!(error.location().found_char, Some('x'));
+    assert!((&*error as &dyn std::error::Error).is::<TagError>());
+}
+
+#[test]
 fn skips_leading_whitespace_and_preserves_trailing_whitespace() {
     let source = " \t\r\n\u{a0}\u{2003}я \n";
     let start_byte = source.find('я').unwrap();
