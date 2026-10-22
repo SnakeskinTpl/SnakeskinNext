@@ -11,8 +11,8 @@ mod tests;
 
 /// Preliminary source structure; explicit end directives remain ordinary candidates.
 #[derive(Debug)]
-pub(crate) struct SyntaxTree<'a> {
-    pub children: Vec<SyntaxNode<'a>>,
+pub(crate) struct SyntaxDocument<'a> {
+    pub nodes: Vec<SyntaxNode<'a>>,
 }
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub(crate) enum SyntaxNode<'a> {
 /// A recognized opening commits to directive parsing, so malformed input is not hidden.
 /// JadeLike directives close before a sibling or ancestor directive, or at end of input.
 /// Nonblank text lines also close directives according to their indentation.
-pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
+pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxDocument<'a>> {
     state(|| RefCell::new(DocumentState::default()), |document, input| {
         let classic = parser(|input| {
             let start_byte = input.byte_position();
@@ -51,7 +51,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
             let (((), candidate), remaining) = parser.parse(input)?;
             let span = start_byte..remaining.byte_position();
 
-            document.borrow_mut().children.push(SyntaxNode::Directive { span, candidate });
+            document.borrow_mut().nodes.push(SyntaxNode::Directive { span, candidate });
 
             Ok(((), remaining))
         });
@@ -68,7 +68,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
                 opening_span: span.clone(),
             });
 
-            document.children.push(SyntaxNode::Directive { span, candidate });
+            document.nodes.push(SyntaxNode::Directive { span, candidate });
 
             Ok(((), remaining))
         });
@@ -95,7 +95,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
             let mut document = document.borrow_mut();
 
             // Merge adjacent text fragments while preserving inferred ends between them.
-            if let Some(SyntaxNode::Text { span, content }) = document.children.last_mut() {
+            if let Some(SyntaxNode::Text { span, content }) = document.nodes.last_mut() {
                 span.end = end_byte;
                 *content = remaining.source_slice(span.clone());
 
@@ -103,7 +103,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
                 let span = start_byte..end_byte;
                 let content = remaining.source_slice(span.clone());
 
-                document.children.push(SyntaxNode::Text { span, content });
+                document.nodes.push(SyntaxNode::Text { span, content });
             }
 
             Ok(((), remaining))
@@ -132,13 +132,13 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxTree<'a>> {
 
         document.close_at(remaining.byte_position(), None);
 
-        Ok((SyntaxTree { children: std::mem::take(&mut document.children) }, remaining))
+        Ok((SyntaxDocument { nodes: std::mem::take(&mut document.nodes) }, remaining))
     })
 }
 
 #[derive(Default)]
 struct DocumentState<'a> {
-    children: Vec<SyntaxNode<'a>>,
+    nodes: Vec<SyntaxNode<'a>>,
     open_directives: Vec<OpenDirective>,
 }
 
@@ -156,7 +156,7 @@ impl DocumentState<'_> {
                 break;
             };
 
-            self.children.push(SyntaxNode::ImplicitEnd {
+            self.nodes.push(SyntaxNode::ImplicitEnd {
                 span: position..position,
                 opening_span: directive.opening_span,
             });
