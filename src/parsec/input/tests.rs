@@ -1,6 +1,34 @@
 use super::ParserInput;
 
 #[test]
+fn previous_character_tracks_unicode_cursor_without_moving_it() {
+    let mut input = ParserInput::new("aя🦀");
+
+    assert_eq!(input.peek_prev(), None);
+
+    for ch in ['a', 'я', '🦀'] {
+        input.next();
+        let position = input.byte_position();
+
+        assert_eq!(input.peek_prev(), Some(ch));
+        assert_eq!(input.peek_prev(), Some(ch));
+        assert_eq!(input.byte_position(), position);
+    }
+
+    assert!(input.is_at_end());
+
+    input.set_byte_position(1);
+
+    assert_eq!(input.peek_prev(), Some('a'));
+    assert_eq!(input.peek(), Some('я'));
+
+    input.set_byte_position(0);
+
+    assert_eq!(input.peek_prev(), None);
+    assert_eq!(ParserInput::new("").peek_prev(), None);
+}
+
+#[test]
 fn start_predicate_tracks_cursor_including_rewind_and_empty_input() {
     let empty = ParserInput::new("");
 

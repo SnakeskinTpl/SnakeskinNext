@@ -53,6 +53,11 @@ impl<'a> ParserInput<'a> {
         self.source[self.byte_pos..].chars().next()
     }
 
+    /// Reads the character before the cursor without moving it; None at input start.
+    pub fn peek_prev(&self) -> Option<char> {
+        self.source[..self.byte_pos].chars().next_back()
+    }
+
     /// Panics if the offset is out of bounds or inside a UTF-8 character.
     pub fn set_byte_position(&mut self, byte_pos: usize) {
         assert!(self.source.is_char_boundary(byte_pos));

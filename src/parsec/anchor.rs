@@ -1,38 +1,20 @@
-use super::{choice, flat_map, succeed, ErrorLocation, ParseError, Parser, ParserInput, ParserResult};
+use super::{ErrorLocation, Parser, ParserInput, ParserResult};
 
 mod err;
-pub use err::{StartOfInputError, LineStartError};
+pub use err::InputStartError;
 
 #[cfg(test)]
 mod tests;
 
 /// Matches byte position zero without consuming input.
-pub fn start_of_input() -> StartOfInput {
-    StartOfInput
-}
-
-/// Matches the start of input or the position immediately after LF, without consuming.
-/// CRLF is recognized after LF; a standalone CR is not a line boundary.
-pub fn line_start<'a>() -> impl Parser<'a, Output = ()> {
-    choice(start_of_input(), flat_map(succeed(), |_, input| {
-        let position = input.byte_position();
-
-        if input.source_slice(0..position).ends_with('\n') {
-            Ok(((), input))
-        } else {
-            Err(LineStartError::new(ErrorLocation {
-                start_byte: position,
-                failure_byte: position,
-                found_char: input.peek(),
-            }) as Box<dyn ParseError>)
-        }
-    }))
+pub fn input_start() -> InputStart {
+    InputStart
 }
 
 #[derive(Debug)]
-pub struct StartOfInput;
+pub struct InputStart;
 
-impl<'a> Parser<'a> for StartOfInput {
+impl<'a> Parser<'a> for InputStart {
     type Output = ();
 
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {
@@ -42,7 +24,7 @@ impl<'a> Parser<'a> for StartOfInput {
             Ok(((), input))
 
         } else {
-            Err(StartOfInputError::new(ErrorLocation {
+            Err(InputStartError::new(ErrorLocation {
                 start_byte: position,
                 failure_byte: position,
                 found_char: input.peek(),

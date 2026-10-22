@@ -29,7 +29,9 @@ pub use not::{not, Not, NotError};
 mod cut;
 pub use cut::{cut, Cut, CutError};
 mod anchor;
-pub use anchor::{start_of_input, line_start, StartOfInput, StartOfInputError, LineStartError};
+pub use anchor::{input_start, InputStart, InputStartError};
+mod line;
+pub use line::{line_start, line_break, line_indent, LineStartError};
 
 mod rec;
 pub use rec::{rec, Rec};

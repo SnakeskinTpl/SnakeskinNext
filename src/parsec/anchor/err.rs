@@ -4,50 +4,25 @@ use std::fmt::{Display, Formatter};
 use crate::parsec::{ErrorLocation, ParseError};
 
 #[derive(Debug)]
-pub struct StartOfInputError {
+pub struct InputStartError {
     location: ErrorLocation,
 }
 
-impl StartOfInputError {
+impl InputStartError {
     pub fn new(location: ErrorLocation) -> Box<Self> {
         Box::new(Self { location })
     }
 }
 
-impl Display for StartOfInputError {
+impl Display for InputStartError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Expected start of input at byte position {}", self.location.failure_byte)
     }
 }
 
-impl Error for StartOfInputError {}
+impl Error for InputStartError {}
 
-impl ParseError for StartOfInputError {
-    fn location(&self) -> &ErrorLocation {
-        &self.location
-    }
-}
-
-#[derive(Debug)]
-pub struct LineStartError {
-    location: ErrorLocation,
-}
-
-impl LineStartError {
-    pub fn new(location: ErrorLocation) -> Box<Self> {
-        Box::new(Self { location })
-    }
-}
-
-impl Display for LineStartError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Expected start of line at byte position {}", self.location.failure_byte)
-    }
-}
-
-impl Error for LineStartError {}
-
-impl ParseError for LineStartError {
+impl ParseError for InputStartError {
     fn location(&self) -> &ErrorLocation {
         &self.location
     }

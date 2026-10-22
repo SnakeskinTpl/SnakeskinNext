@@ -33,20 +33,20 @@ impl<'a, P: Parser<'a>> Parser<'a> for TakeMatch<P> {
         let start_byte = input.byte_position();
         let mut count = 0usize;
 
-        while
-            count < self.max &&
-            input.peek().is_some()
-        {
+        while count < self.max && input.peek().is_some() {
             match self.parser.parse(input.clone()) {
                 Ok(_) => {
                     input.next();
                     count += 1;
                 }
+
                 Err(cause) if !cause.is_recoverable() => return Err(cause),
+
                 Err(cause) if count < self.min => {
                     let location = ErrorLocation { start_byte, failure_byte: input.byte_position(), found_char: input.peek() };
                     return Err(TakeMatchError::new(location, self.min, count, Some(cause)));
                 }
+
                 Err(_) => break,
             }
         }
