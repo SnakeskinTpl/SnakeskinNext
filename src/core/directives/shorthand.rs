@@ -4,8 +4,9 @@ use std::ops::Range;
 
 use crate::core::syntax::identifier;
 use crate::core::syntax::json::{json, JsonKind, JsonValue};
-use crate::parsec::{ltrim, ltrim1, not, flat_map, spanned, take, ErrorLocation, ParseError, Parser, ParserInput};
-use crate::seq;
+
+use crate::parsec::prelude::*;
+use crate::parsec::{ErrorLocation, ParseError};
 
 use super::{AncestorRules, Directive, DirectiveContext, DirectiveDefinition, DirectiveResult};
 
@@ -24,7 +25,7 @@ impl Shorthand {
         Self {
             definition: DirectiveDefinition {
                 name: "shorthand",
-                is_block: false,
+                block: false,
                 requires_body: true,
                 allows_self_nesting: false,
                 groups: vec![],
@@ -83,11 +84,12 @@ fn declaration<'a>() -> impl Parser<'a, Output = ShorthandBinding<'a>> {
     let body_syntax = seq!(
         ltrim(identifier()),
         ltrim1(json()),
-        ltrim(not(take(|_, _, _| true, 1..=1)))
+        ltrim(input_end())
     );
 
     flat_map(spanned(body_syntax), |(span, ((target, options), ())), remaining| {
         let options_span = options.span.clone();
+
         let JsonKind::Object(properties) = options.kind else {
             return Err(config_error(&remaining, options_span, "Expected a shorthand options object"));
         };

@@ -1,6 +1,5 @@
 use crate::core::syntax::identifier;
-use crate::parsec::{map, whitespace, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
 
 /// Parses an identifier followed by a required whitespace separator.
 pub(crate) fn directive_name<'a>() -> impl Parser<'a, Output = &'a str> {

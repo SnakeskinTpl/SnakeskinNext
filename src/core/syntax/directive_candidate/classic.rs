@@ -1,7 +1,6 @@
 use std::cell::Cell;
 
-use crate::parsec::{choice, map, opt, flat_map, seq, spanned, state, tag, take, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
 
 use super::name::directive_name;
 use super::{DirectiveCandidate, DirectiveForm};

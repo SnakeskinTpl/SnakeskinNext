@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use crate::parsec::{choice, cut, ltrim, map, opt, rec, repeat, spanned, tag, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
 
 use super::super::identifier;
 use super::string::string;

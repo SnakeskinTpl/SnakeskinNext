@@ -1,4 +1,4 @@
-use crate::parsec::{map, tag, Parser};
+use crate::parsec::prelude::*;
 
 use super::JsonKind;
 

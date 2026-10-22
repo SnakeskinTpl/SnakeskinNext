@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
-use crate::parsec::{choice, flat_map, map, opt, seq, state, tag, take, try_take, ErrorLocation, Parser, ParserInput};
+use crate::parsec::prelude::*;
+use crate::parsec::{ErrorLocation};
 
 use super::name::directive_name;
 use super::{DirectiveCandidate, DirectiveForm};

@@ -1,5 +1,4 @@
-use crate::parsec::{recognize, take, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
 
 #[cfg(test)]
 mod tests;

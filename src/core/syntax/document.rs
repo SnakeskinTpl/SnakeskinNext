@@ -1,10 +1,14 @@
 use std::cell::RefCell;
 use std::ops::Range;
 
-use crate::{choice, seq};
-use crate::parsec::{choice, cut, flat_map, line_break, line_indent, line_start, lookup, map, not, opt, parser, repeat, seq, state, tag, take, take_match, Parser};
+use crate::parsec::prelude::*;
+use crate::parsec::{line_break, line_indent, line_start};
 
-use super::directive_candidate::{classic_directive_candidate, classic_directive_start, jade_like_directive_candidate, jade_like_directive_start, DirectiveCandidate};
+use super::directive_candidate::{
+    classic_directive_candidate, classic_directive_start,
+    jade_like_directive_candidate, jade_like_directive_start,
+    DirectiveCandidate
+};
 
 #[cfg(test)]
 mod tests;
@@ -126,7 +130,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxDocument<'a>> {
             0..
         );
 
-        let end = not(take(|_, _, _| true, 1..=1));
+        let end = input_end();
         let (_, remaining) = seq(nodes, end).parse(input)?;
         let document = document.get_mut();
 

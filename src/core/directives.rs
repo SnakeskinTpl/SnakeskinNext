@@ -28,7 +28,7 @@ pub(crate) trait Directive {
 pub(crate) struct DirectiveDefinition<'a> {
     pub name: &'a str,
 
-    pub is_block: bool,
+    pub block: bool,
     pub requires_body: bool,
     pub allows_self_nesting: bool,
 
@@ -59,7 +59,7 @@ pub(crate) struct AncestorRules<'a> {
 }
 
 /// Borrows declarations from language-module sources that outlive processing.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct DirectiveContext<'a> {
     pub shorthands: HashMap<Cow<'a, str>, ShorthandBinding<'a>>,
 }

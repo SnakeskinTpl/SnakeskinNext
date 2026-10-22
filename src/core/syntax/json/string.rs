@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use crate::parsec::{cut, flat_map, spanned, tag, take, ErrorLocation, ParseError, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
+use crate::parsec::{ErrorLocation, ParseError};
 
 use super::err::JsonError;
 

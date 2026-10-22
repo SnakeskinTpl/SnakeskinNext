@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 use std::ops::Range;
 
-use crate::parsec::{ltrim, map, spanned, Parser};
-use crate::choice;
+use crate::parsec::prelude::*;
 
 mod array;
 mod boolean;

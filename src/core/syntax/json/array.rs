@@ -1,5 +1,4 @@
-use crate::parsec::{cut, ltrim, map, opt, rec, repeat, tag, Parser};
-use crate::seq;
+use crate::parsec::prelude::*;
 
 use super::{json, JsonKind};
 

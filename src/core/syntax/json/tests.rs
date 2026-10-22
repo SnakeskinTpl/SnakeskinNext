@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
-use crate::parsec::{ltrim, not, seq, take, ParserInput};
+use crate::parsec::{input_end, ltrim, seq, ParserInput};
 
 use super::*;
 
 fn complete(source: &str) -> Result<JsonValue<'_>, Box<dyn crate::parsec::ParseError>> {
     let ((value, ()), _) = seq(
         json(),
-        ltrim(not(take(|_, _, _| true, 1..=1)))
+        ltrim(input_end())
     ).parse(ParserInput::new(source))?;
 
     Ok(value)
