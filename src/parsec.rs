@@ -29,7 +29,7 @@ pub use not::{not, Not, NotError};
 mod cut;
 pub use cut::{cut, Cut, CutError};
 mod anchor;
-pub use anchor::{input_start, InputStart, InputStartError};
+pub use anchor::{input_start, input_end, InputStart, InputEnd, InputStartError, InputEndError};
 mod line;
 pub use line::{line_start, line_break, line_indent, LineStartError};
 
@@ -51,6 +51,8 @@ pub use err::DataError;
 
 pub mod input;
 pub use input::ParserInput;
+
+pub mod prelude;
 
 #[cfg(test)]
 mod tests;

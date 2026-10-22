@@ -1,6 +1,62 @@
 use super::ParserInput;
 
 #[test]
+fn offset_input_preserves_source_positions_and_bounds() {
+    let mut input = ParserInput::with_offset("я🦀", 10);
+
+    assert_eq!(input.byte_position(), 10);
+    assert!(!input.is_at_start());
+    assert_eq!(input.peek_prev(), None);
+
+    assert_eq!(input.next(), Some('я'));
+    assert_eq!(input.byte_position(), 12);
+    assert_eq!(input.source_slice(10..12), "я");
+
+    let mut cloned = input.clone();
+    cloned.set_byte_position(16);
+
+    assert!(cloned.is_at_end());
+    assert_eq!(cloned.byte_position(), 16);
+    assert_eq!(input.peek(), Some('🦀'));
+
+    cloned.set_byte_position(10);
+
+    assert_eq!(cloned.peek(), Some('я'));
+    assert_eq!(cloned.source_slice(10..16), "я🦀");
+}
+
+#[test]
+fn parsing_offset_input_returns_absolute_spans_and_errors() {
+    use crate::parsec::{spanned, tag, Parser};
+
+    let input = ParserInput::with_offset("я!", 20);
+
+    let ((span, text), remaining) = spanned(tag("я")).parse(input.clone()).unwrap();
+
+    assert_eq!(span, 20..22);
+    assert_eq!(text, "я");
+    assert_eq!(remaining.peek(), Some('!'));
+
+    let error = tag("я?").parse(input).unwrap_err();
+
+    assert_eq!(error.location().start_byte, 20);
+    assert_eq!(error.location().failure_byte, 22);
+    assert_eq!(error.location().found_char, Some('!'));
+}
+
+#[test]
+#[should_panic]
+fn offset_input_cannot_seek_before_its_start() {
+    ParserInput::with_offset("text", 10).set_byte_position(9);
+}
+
+#[test]
+#[should_panic]
+fn offset_input_cannot_expose_text_outside_its_bounds() {
+    ParserInput::with_offset("text", 10).source_slice(10..15);
+}
+
+#[test]
 fn previous_character_tracks_unicode_cursor_without_moving_it() {
     let mut input = ParserInput::new("aя🦀");
 
