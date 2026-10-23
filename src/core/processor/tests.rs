@@ -1,8 +1,13 @@
+use crate::core::directives::DirectiveAction;
+use crate::core::ir::Node;
 use crate::parsec::{Parser, ParserInput};
 
 use super::super::directives::Shorthand;
 use super::super::syntax::document::document;
 use super::*;
+use super::err::{ProcessError, ProcessErrorKind};
+
+mod variables;
 
 struct RecordingDirective {
     definition: super::super::directives::DirectiveDefinition<'static>,
@@ -324,4 +329,104 @@ fn duplicate_shorthand_keeps_original_declaration_ranges() {
     assert_eq!(processor.context.shorthands.get("<").unwrap().target, "tag");
     assert_eq!(processor.context.shorthands.get("<").unwrap().span,
         source.find("tag {").unwrap()..source.find('\n').unwrap());
+}
+
+fn conditional_processor() -> Processor<'static> {
+    use super::super::directives::{End, If};
+    use super::super::types::Type;
+
+    let mut processor = Processor::new();
+    processor.register_directive("if", Box::new(If::new())).unwrap();
+    processor.register_directive("end", Box::new(End::new())).unwrap();
+    processor.context.types.insert("enabled", Type::Bool);
+    processor
+}
+
+#[test]
+fn if_preserves_false_conditions_and_text_without_evaluating_them() {
+    use super::super::syntax::expression::ExpressionKind;
+    use super::super::syntax::literal::LiteralKind;
+
+    let source = "before{if false}inside{/if}after";
+    let mut processor = conditional_processor();
+    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+
+    let result = processor.process(syntax).unwrap();
+
+    assert_eq!(result.nodes.len(), 3);
+    let Node::If { span, condition, children } = &result.nodes[1] else { panic!("Expected conditional") };
+
+    assert_eq!(*span, 6..27);
+    assert_eq!(condition.span, 10..15);
+    assert_eq!(condition.kind, ExpressionKind::Literal(LiteralKind::Bool(false)));
+    assert_eq!(children.len(), 1);
+    assert!(matches!(&children[0], Node::Text { content: "inside", span } if *span == (16..22)));
+    assert!(matches!(&result.nodes[0], Node::Text { content: "before", .. }));
+    assert!(matches!(&result.nodes[2], Node::Text { content: "after", .. }));
+}
+
+#[test]
+fn if_supports_nested_classic_and_jade_blocks_with_explicit_or_inferred_ends() {
+    for source in [
+        "{if enabled}{if !false}inner{/if}{/if}",
+        "- if enabled\n  - if !false\n    inner",
+        "- if enabled\n  - if !false\n    inner\n  - end if\n- end if",
+    ] {
+        let mut processor = conditional_processor();
+        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+
+        let result = processor.process(syntax).unwrap();
+        let outer = result.nodes.iter().find_map(|node| match node {
+            Node::If { children, .. } => Some(children),
+            _ => None,
+        }).expect("Expected outer conditional");
+        let inner = outer.iter().find_map(|node| match node {
+            Node::If { children, .. } => Some(children),
+            _ => None,
+        }).expect("Expected nested conditional");
+
+        assert!(inner.iter().any(|node| matches!(node, Node::Text { content, .. } if content.contains("inner"))), "{source:?}");
+    }
+}
+
+#[test]
+fn if_requires_a_complete_boolean_condition_with_located_errors() {
+    use super::super::types::{Type, TypeError, TypeErrorKind};
+
+    for source in ["{if 1}body{/if}", "- if \"text\"\n  body"] {
+        let mut processor = conditional_processor();
+        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+
+        let error = processor.process(syntax).unwrap_err();
+        let cause = error.source().unwrap().downcast_ref::<TypeError>().unwrap();
+
+        assert!(matches!(cause.kind, TypeErrorKind::MismatchedType { expected: Type::Bool, .. }));
+        assert_eq!(error.location().failure_byte, source.find("1").or_else(|| source.find('"')).unwrap());
+    }
+}
+
+#[test]
+fn if_rejects_empty_unknown_and_incomplete_conditions_and_unclosed_blocks() {
+    for source in ["{if}", "{if missing}{/if}", "{if true extra}{/if}", "{if !}{/if}", "{if true}"] {
+        let mut processor = conditional_processor();
+        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+
+        assert!(processor.process(syntax).is_err(), "{source:?}");
+    }
+}
+
+#[test]
+fn failed_if_processing_does_not_leak_output_or_block_state() {
+    let mut processor = conditional_processor();
+    let (invalid, _) = document(Some(&processor.context)).parse(ParserInput::new("{if true}{if 1}")).unwrap();
+
+    assert!(processor.process(invalid).is_err());
+
+    let source = "{if enabled}ok{/if}";
+    let (valid, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+
+    let result = processor.process(valid).unwrap();
+
+    assert_eq!(result.nodes.len(), 1);
+    assert!(matches!(&result.nodes[0], Node::If { children, .. } if children.len() == 1));
 }

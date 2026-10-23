@@ -3,27 +3,27 @@ use crate::core::syntax::literal::LiteralKind;
 
 use super::literal::literal_type;
 use super::resolve::resolve;
-use super::{InferredType, Type, TypeEnvironment, TypeError, TypeErrorKind};
+use super::{ValueInfo, Type, TypeEnvironment, TypeError, TypeErrorKind};
 
 /// Infers types and preserves literal data without evaluating expressions.
-pub(crate) fn infer<'a>(expression: &Expression<'a>, environment: &TypeEnvironment<'_>) -> Result<InferredType<'a>, TypeError> {
+pub(crate) fn infer<'a>(expression: &Expression<'a>, environment: &TypeEnvironment<'_>) -> Result<ValueInfo<'a>, TypeError> {
     infer_expected(expression, environment, None)
 }
 
-fn infer_expected<'a>(expression: &Expression<'a>, environment: &TypeEnvironment<'_>, expected: Option<Type>) -> Result<InferredType<'a>, TypeError> {
+fn infer_expected<'a>(expression: &Expression<'a>, environment: &TypeEnvironment<'_>, expected: Option<Type>) -> Result<ValueInfo<'a>, TypeError> {
     let unsupported = |construct| TypeError {
         span: expression.span.clone(),
         kind: TypeErrorKind::Unsupported { construct },
     };
 
     match &expression.kind {
-        ExpressionKind::Literal(value) => Ok(InferredType {
+        ExpressionKind::Literal(value) => Ok(ValueInfo {
             ty: literal_type(value, expected, expression.span.clone())?,
             literal: Some(value.clone()),
         }),
 
         ExpressionKind::Identifier(name) => environment.get(name).copied()
-            .map(InferredType::computed)
+            .map(ValueInfo::computed)
             .ok_or_else(|| TypeError {
                 span: expression.span.clone(),
                 kind: TypeErrorKind::UnknownIdentifier { name: (*name).into() },
@@ -34,9 +34,9 @@ fn infer_expected<'a>(expression: &Expression<'a>, environment: &TypeEnvironment
             let operand = infer_expected(operand, environment, expected)?.ty;
 
             match (operator, operand) {
-                (UnaryOperator::Not, Type::Bool) => Ok(InferredType::computed(Type::Bool)),
-                (UnaryOperator::Positive, ty) if ty.is_numeric() => Ok(InferredType::computed(ty)),
-                (UnaryOperator::Negate, ty @ (Type::Int { .. } | Type::Float { .. })) => Ok(InferredType::computed(ty)),
+                (UnaryOperator::Not, Type::Bool) => Ok(ValueInfo::computed(Type::Bool)),
+                (UnaryOperator::Positive, ty) if ty.is_numeric() => Ok(ValueInfo::computed(ty)),
+                (UnaryOperator::Negate, ty @ (Type::Int { .. } | Type::Float { .. })) => Ok(ValueInfo::computed(ty)),
 
                 _ => Err(TypeError {
                     span: operator_span.clone(),
@@ -67,7 +67,7 @@ fn infer_expected<'a>(expression: &Expression<'a>, environment: &TypeEnvironment
                 _ => None,
             };
 
-            ty.map(InferredType::computed).ok_or_else(|| TypeError {
+            ty.map(ValueInfo::computed).ok_or_else(|| TypeError {
                 span: operator_span.clone(),
                 kind: TypeErrorKind::InvalidBinary { operator: *operator, left, right },
             })
@@ -75,16 +75,16 @@ fn infer_expected<'a>(expression: &Expression<'a>, environment: &TypeEnvironment
 
         ExpressionKind::Cast { target, operand } => {
             let expected = resolve(target)?;
-            let inferred = infer_expected(operand, environment, Some(expected))?;
+            let value_info = infer_expected(operand, environment, Some(expected))?;
 
-            if inferred.ty == expected {
-                return Ok(inferred);
+            if value_info.ty == expected {
+                return Ok(value_info);
             }
 
             // TODO: Validate non-identity casts and represent conversions in typed IR.
             Err(TypeError {
                 span: expression.span.clone(),
-                kind: TypeErrorKind::MismatchedType { expected, found: inferred.ty },
+                kind: TypeErrorKind::MismatchedType { expected, found: value_info.ty },
             })
         }
 

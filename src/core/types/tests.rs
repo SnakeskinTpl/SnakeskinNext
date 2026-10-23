@@ -18,9 +18,9 @@ fn infers_boolean_expressions_in_an_empty_environment() {
     for source in ["true", "false", "!(true)", "!!false", "true && !false", "false || true", "true == false", "true != false", "<Bool>!false"] {
         let parsed = parse(source);
 
-        let inferred = infer(&parsed, &environment).unwrap();
+        let value_info = infer(&parsed, &environment).unwrap();
 
-        assert_eq!(inferred.ty, Type::Bool, "{source:?}");
+        assert_eq!(value_info.ty, Type::Bool, "{source:?}");
     }
 }
 
@@ -30,12 +30,12 @@ fn resolves_names_from_the_environment_without_modifying_it_or_the_ast() {
     let parsed = parse("!enabled || visible");
     let original = parsed.clone();
 
-    let inferred = infer(&parsed, &environment).unwrap();
+    let value_info = infer(&parsed, &environment).unwrap();
 
-    assert_eq!(inferred.ty, Type::Bool);
+    assert_eq!(value_info.ty, Type::Bool);
     assert_eq!(parsed, original);
     assert_eq!(environment.len(), 2);
-    assert_eq!(environment["enabled"], Type::Bool);
+    assert_eq!(environment.get("enabled"), Some(&Type::Bool));
 }
 
 #[test]
@@ -113,10 +113,10 @@ fn numeric_literals_use_suffixes_and_defaults_without_losing_exact_spelling() {
     ] {
         let parsed = parse(source);
 
-        let inferred = infer(&parsed, &TypeEnvironment::new()).unwrap();
+        let value_info = infer(&parsed, &TypeEnvironment::new()).unwrap();
 
-        assert_eq!(inferred.ty, expected, "{source:?}");
-        let Some(crate::core::syntax::literal::LiteralKind::Number(number)) = inferred.literal else { panic!("Expected literal data") };
+        assert_eq!(value_info.ty, expected, "{source:?}");
+        let Some(crate::core::syntax::literal::LiteralKind::Number(number)) = value_info.literal else { panic!("Expected literal data") };
 
         assert!(source.starts_with(number.content));
     }
@@ -129,15 +129,15 @@ fn literal_data_is_preserved_but_computed_expressions_are_not_marked_as_literals
     let environment = TypeEnvironment::from([("flag", Type::Bool)]);
 
     for source in ["true", "(true)", "<Bool>true"] {
-        let inferred = infer(&parse(source), &environment).unwrap();
+        let value_info = infer(&parse(source), &environment).unwrap();
 
-        assert_eq!(inferred.literal, Some(LiteralKind::Bool(true)));
+        assert_eq!(value_info.literal, Some(LiteralKind::Bool(true)));
     }
 
     for source in ["flag", "!true", "true && false", "1 + 2", "-1"] {
-        let inferred = infer(&parse(source), &environment).unwrap();
+        let value_info = infer(&parse(source), &environment).unwrap();
 
-        assert_eq!(inferred.literal, None, "{source:?}");
+        assert_eq!(value_info.literal, None, "{source:?}");
     }
 }
 
@@ -147,15 +147,15 @@ fn string_literals_preserve_decoded_values_for_inlining() {
 
     let parsed = parse(r#""hello\nworld""#);
 
-    let inferred = infer(&parsed, &TypeEnvironment::new()).unwrap();
+    let value_info = infer(&parsed, &TypeEnvironment::new()).unwrap();
 
-    assert_eq!(inferred.ty, Type::Str);
-    assert_eq!(inferred.literal, Some(LiteralKind::String("hello\nworld".into())));
+    assert_eq!(value_info.ty, Type::Str);
+    assert_eq!(value_info.literal, Some(LiteralKind::String("hello\nworld".into())));
 
-    let inferred = infer(&parse(r#"<Str>"text""#), &TypeEnvironment::new()).unwrap();
+    let value_info = infer(&parse(r#"<Str>"text""#), &TypeEnvironment::new()).unwrap();
 
-    assert_eq!(inferred.ty, Type::Str);
-    assert_eq!(inferred.literal, Some(LiteralKind::String("text".into())));
+    assert_eq!(value_info.ty, Type::Str);
+    assert_eq!(value_info.literal, Some(LiteralKind::String("text".into())));
 }
 
 #[test]
@@ -178,9 +178,9 @@ fn explicit_operand_types_supply_context_in_either_order_before_defaults() {
     let environment = TypeEnvironment::from([("wide", Type::Int { bits: 64 })]);
 
     for source in ["wide + 1", "1 + wide", "1 + (2 + wide)", "1 + 2i64", "<Int<64>>(1 + 2)"] {
-        let inferred = infer(&parse(source), &environment).unwrap();
+        let value_info = infer(&parse(source), &environment).unwrap();
 
-        assert_eq!(inferred.ty, Type::Int { bits: 64 }, "{source:?}");
+        assert_eq!(value_info.ty, Type::Int { bits: 64 }, "{source:?}");
     }
 
     assert_eq!(infer(&parse("wide > 1"), &environment).unwrap().ty, Type::Bool);
@@ -214,9 +214,9 @@ fn float_context_and_numeric_type_names_resolve_without_conversions() {
     let environment = TypeEnvironment::from([("value", Type::Float { bits: 32 })]);
 
     for source in ["value + 1.5", "1 + value", "<Float<32>>1.5", "<Float<32>>(1 + 2)"] {
-        let inferred = infer(&parse(source), &environment).unwrap();
+        let value_info = infer(&parse(source), &environment).unwrap();
 
-        assert_eq!(inferred.ty, Type::Float { bits: 32 }, "{source:?}");
+        assert_eq!(value_info.ty, Type::Float { bits: 32 }, "{source:?}");
     }
 
     assert_eq!(infer(&parse("<UInt>1"), &environment).unwrap().ty, Type::UInt { bits: 32 });

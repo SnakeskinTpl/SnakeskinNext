@@ -2,12 +2,22 @@
 
 use crate::core::shorthands::{ShorthandDefinition, ShorthandRegistry};
 use crate::parsec::{ParseError, ParserInput};
+use crate::core::syntax::expression::Expression;
+use crate::core::types::TypeEnvironment;
+
+mod err;
 
 mod shorthand;
 pub(crate) use shorthand::Shorthand;
 
 mod end;
 pub(crate) use end::End;
+
+mod condition;
+pub(crate) use condition::If;
+
+mod variable;
+pub(crate) use variable::{Let, Var};
 
 pub(crate) trait Directive {
     fn definition(&self) -> &DirectiveDefinition<'_>;
@@ -71,6 +81,7 @@ pub(crate) struct AncestorRules<'a> {
 #[derive(Debug, Default)]
 pub(crate) struct DirectiveContext<'a> {
     pub shorthands: ShorthandRegistry<'a>,
+    pub types: TypeEnvironment<'a>,
 }
 
 // Reuse located parser diagnostics until semantic diagnostics are defined.
@@ -83,6 +94,11 @@ pub(crate) enum DirectiveAction<'a> {
 
     /// Close the current block, optionally checking its registered name.
     CloseBlock { name: Option<&'a str> },
+
+    /// Preserve a checked condition; processing does not evaluate it.
+    Conditional { condition: Expression<'a> },
+
+    Declare { declaration: crate::core::ir::VariableDeclaration<'a> },
 }
 
 pub(crate) type DirectiveBeginResult<'a> = Result<DirectiveAction<'a>, Box<dyn ParseError>>;

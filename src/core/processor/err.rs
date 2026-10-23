@@ -7,6 +7,7 @@ use crate::parsec::{ErrorLocation, ParseError};
 pub(crate) enum ProcessErrorKind {
     UnknownDirective { name: String },
     UnresolvedDirective,
+    DuplicateVariable { name: String },
     MissingBody { name: String },
     UnexpectedEnd,
     MismatchedEnd { expected: String, found: String },
@@ -30,6 +31,7 @@ impl Display for ProcessError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match &self.kind {
             ProcessErrorKind::UnknownDirective { name } => write!(f, "Unknown directive {name:?}"),
+            ProcessErrorKind::DuplicateVariable { name } => write!(f, "Variable {name:?} is already declared in this scope"),
             ProcessErrorKind::UnresolvedDirective => write!(f, "Cannot resolve directive without a name"),
             ProcessErrorKind::MissingBody { name } => write!(f, "Directive {name:?} requires a body"),
             ProcessErrorKind::UnexpectedEnd => write!(f, "No open block to close"),
