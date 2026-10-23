@@ -18,6 +18,7 @@
 - Prefer meaningful behavioral tests, including boundary cases and interactions between combinators. Avoid tests that merely repeat implementation details.
 - Keep public re-exports explicit rather than using wildcard re-exports in the public facade.
 - Follow the surrounding naming and API conventions. Keep unrelated changes out of the task.
+- Use plain `pub` for exposed fields and inherent methods of internal structs; keep crate-level restrictions on the types themselves.
 - Run `cargo test` after behavioral changes and renames that affect module paths or APIs. Report failures and material limitations accurately.
 
 # Git
