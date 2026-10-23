@@ -9,6 +9,9 @@ pub(crate) use boolean::boolean;
 mod string;
 pub(crate) use string::string;
 
+mod number;
+pub(crate) use number::{number, NumberLiteral, NumberForm, NumberSuffix};
+
 #[cfg(test)]
 mod tests;
 
@@ -22,14 +25,16 @@ pub(crate) struct Literal<'a> {
 pub(crate) enum LiteralKind<'a> {
     Bool(bool),
     String(Cow<'a, str>),
+    Number(NumberLiteral<'a>),
 }
 
 /// Parses a language literal, consuming leading whitespace but leaving trailing input.
 pub(crate) fn literal<'a>() -> impl Parser<'a, Output = Literal<'a>> {
     ltrim(map(
-        spanned(choice(
+        spanned(choice!(
             map(boolean(), LiteralKind::Bool),
-            map(string(), LiteralKind::String)
+            map(string(), LiteralKind::String),
+            map(number(), LiteralKind::Number)
         )),
         |(span, kind)| Literal { span, kind }
     ))

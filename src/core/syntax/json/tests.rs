@@ -131,19 +131,46 @@ fn malformed_strings_report_fatal_errors() {
 
 #[test]
 fn parses_integer_fraction_and_exponent_forms() {
-    for (source, expected) in [("0", 0.0), ("-2", -2.0), ("1e2", 100.0),
-        ("1E-2", 0.01), ("-1.25e+2", -125.0)] {
+    use super::super::literal::number;
+
+    for source in ["0", "01", "1e2", "1E-2", "1.25e+2", "1_000_0000", "4i16", "1e2f32", "1e999", "9007199254740993"] {
+        let (expected, _) = number().parse(ParserInput::new(source)).unwrap();
+
         let value = complete(source).unwrap();
 
         assert_eq!(value.kind, JsonKind::Number(expected));
+        assert_eq!(value.span, 0..source.len());
     }
 }
 
 #[test]
-fn rejects_invalid_numbers_and_overflow() {
-    for source in ["+1", "01", "-", "1.", "1e", "1e+", "1.e2", "1e999", "NaN", "Infinity"] {
+fn rejects_invalid_numeric_tokens_and_signs_reserved_for_expressions() {
+    for source in ["+1", "-2", "-", "1.", "1e", "1e+", "1.e2", "1__2", "1_", "1f32name", "NaN", "Infinity"] {
         assert!(complete(source).is_err(), "Expected invalid number: {source:?}");
     }
+}
+
+#[test]
+fn nested_configuration_preserves_numeric_spelling_suffix_and_absolute_span() {
+    use super::super::literal::{NumberForm, NumberSuffix};
+
+    let source = "{sizes: [9007199254740993u64, 1_000.25e-2f32]}";
+
+    let value = complete(source).unwrap();
+    let JsonKind::Object(properties) = value.kind else { panic!("Expected an object") };
+    let JsonKind::Array(values) = &properties[0].value.kind else { panic!("Expected an array") };
+    let JsonKind::Number(integer) = &values[0].kind else { panic!("Expected an integer") };
+    let JsonKind::Number(decimal) = &values[1].kind else { panic!("Expected a decimal") };
+
+    assert_eq!(integer.content, "9007199254740993");
+    assert_eq!(integer.form, NumberForm::Integer);
+    assert_eq!(integer.suffix, Some(NumberSuffix::UInt { bits: Some("64") }));
+    assert_eq!(&source[values[0].span.clone()], "9007199254740993u64");
+
+    assert_eq!(decimal.content, "1_000.25e-2");
+    assert_eq!(decimal.form, NumberForm::Decimal);
+    assert_eq!(decimal.suffix, Some(NumberSuffix::Float { bits: Some("32") }));
+    assert_eq!(&source[values[1].span.clone()], "1_000.25e-2f32");
 }
 
 #[test]

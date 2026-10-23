@@ -3,12 +3,10 @@ use std::ops::Range;
 
 use crate::parsec::prelude::*;
 
-use super::literal::{boolean, string};
+use super::literal::{boolean, number, string, NumberLiteral};
 
 mod array;
-mod err;
 mod null;
-mod number;
 mod object;
 
 #[cfg(test)]
@@ -24,7 +22,7 @@ pub(crate) struct JsonValue<'a> {
 pub(crate) enum JsonKind<'a> {
     Null,
     Bool(bool),
-    Number(f64),
+    Number(NumberLiteral<'a>),
     String(Cow<'a, str>),
     Array(Vec<JsonValue<'a>>),
     Object(Vec<JsonProperty<'a>>),
@@ -37,14 +35,14 @@ pub(crate) struct JsonProperty<'a> {
     pub value: JsonValue<'a>,
 }
 
-/// Parses one JSON-like value, allowing identifier keys in objects.
+/// Parses one JSON-like value with SS literals and identifier keys in objects.
 /// Leading whitespace is consumed; trailing input remains for the enclosing grammar.
 pub(crate) fn json<'a>() -> Box<dyn Parser<'a, Output = JsonValue<'a>> + 'a> {
     let value = choice!(
         null::null(),
         map(boolean(), JsonKind::Bool),
         map(string(), JsonKind::String),
-        number::number(),
+        map(number(), JsonKind::Number),
         object::object(),
         array::array()
     );

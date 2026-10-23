@@ -38,7 +38,7 @@ fn parses_boolean_keywords_and_preserves_trailing_input() {
 fn rejects_identifier_prefixes_and_non_boolean_values() {
     for source in [
         "trueValue", "false_", "true1", "false\u{0436}",
-        "True", "FALSE", "tru", "", "0", "null",
+        "True", "FALSE", "tru", "", "null",
     ] {
         let error = literal().parse(ParserInput::new(source)).unwrap_err();
 
