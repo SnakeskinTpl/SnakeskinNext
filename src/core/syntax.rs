@@ -8,3 +8,4 @@ pub(crate) use identifier::identifier;
 
 pub(crate) mod json;
 pub(crate) mod literal;
+pub(crate) mod expression;

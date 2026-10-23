@@ -35,10 +35,10 @@ pub(crate) enum NumberSuffix<'a> {
 /// Suffix widths and value ranges are validated after contextual type resolution.
 pub(crate) fn number<'a>() -> impl Parser<'a, Output = NumberLiteral<'a>> {
     flat_map(spanned(digits()), |(integer_span, _), input| {
-        // A single dot begins a fraction; `1..2` leaves the range operator untouched.
+        // A fraction requires a digit after the dot; `1.method()` keeps its field access.
         let fraction = seq!(
             tag("."),
-            not(tag(".")),
+            peek(take(|ch, _, _| ch.is_ascii_digit(), 1..=1)),
             cut(digits())
         );
 

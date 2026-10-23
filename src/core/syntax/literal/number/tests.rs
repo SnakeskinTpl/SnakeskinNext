@@ -83,6 +83,10 @@ fn suffixes_preserve_requested_type_and_optional_width() {
 fn operators_and_punctuation_remain_for_the_expression_parser() {
     for (source, expected_tail) in [
         ("1..2", "..2"),
+        ("1.method()", ".method()"),
+        ("1._2", "._2"),
+        ("1.", "."),
+        ("1.e2", ".e2"),
         ("1..=2", "..=2"),
         ("1+2", "+2"),
         ("1-2", "-2"),
@@ -99,9 +103,9 @@ fn operators_and_punctuation_remain_for_the_expression_parser() {
 #[test]
 fn malformed_numeric_tokens_do_not_succeed_as_valid_prefixes() {
     for source in [
-        "1_", "1__2", "1._2", "1.2_", "1.",
+        "1_", "1__2", "1.2_",
         "1foo", "1i32name", "1u_8", "1\u{0436}", "0xFF",
-        "1e", "1E+", "1e-", "1e_3", "1e3_", "1e3name", "1.e2",
+        "1e", "1E+", "1e-", "1e_3", "1e3_", "1e3name",
     ] {
         let error = number().parse(ParserInput::new(source)).unwrap_err();
 

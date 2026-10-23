@@ -41,6 +41,7 @@ pub(crate) fn literal<'a>() -> impl Parser<'a, Output = Literal<'a>> {
             map(string(), LiteralKind::String),
             map(number(), LiteralKind::Number)
         )),
+
         |(span, kind)| Literal { span, kind }
     ))
 }
