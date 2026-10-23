@@ -3,7 +3,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::ops::Range;
 
-use crate::parsec::{tag, Parser, ParserInput};
+use crate::parsec::prelude::*;
 
 #[derive(Debug, Default)]
 pub(crate) struct ShorthandRegistry<'a> {
@@ -41,8 +41,10 @@ impl<'a> ShorthandRegistry<'a> {
             .filter(|binding| !binding.opening.is_empty() && binding.closing.as_deref().is_some_and(|closing| !closing.is_empty()))
 
             .filter(|binding| {
-                tag(binding.opening.as_ref()).parse(input.clone())
-                    .is_ok_and(|(_, remaining)| !matches!(remaining.peek(), Some(' ' | '\t')))
+                seq(
+                    tag(binding.opening.as_ref()),
+                    not(horizontal_whitespace())
+                ).parse(input.clone()).is_ok()
             })
 
             .max_by_key(|binding| binding.opening.len())

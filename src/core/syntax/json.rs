@@ -3,24 +3,24 @@ use std::ops::Range;
 
 use crate::parsec::prelude::*;
 
+use super::literal::{boolean, string};
+
 mod array;
-mod boolean;
 mod err;
 mod null;
 mod number;
 mod object;
-mod string;
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct JsonValue<'a> {
     pub span: Range<usize>,
     pub kind: JsonKind<'a>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum JsonKind<'a> {
     Null,
     Bool(bool),
@@ -30,7 +30,7 @@ pub(crate) enum JsonKind<'a> {
     Object(Vec<JsonProperty<'a>>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct JsonProperty<'a> {
     pub key: Cow<'a, str>,
     pub key_span: Range<usize>,
@@ -42,8 +42,8 @@ pub(crate) struct JsonProperty<'a> {
 pub(crate) fn json<'a>() -> Box<dyn Parser<'a, Output = JsonValue<'a>> + 'a> {
     let value = choice!(
         null::null(),
-        boolean::boolean(),
-        map(string::string(), JsonKind::String),
+        map(boolean(), JsonKind::Bool),
+        map(string(), JsonKind::String),
         number::number(),
         object::object(),
         array::array()

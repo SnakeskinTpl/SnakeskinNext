@@ -13,7 +13,7 @@ pub use take_match::{take_match, TakeMatch, TakeMatchError};
 mod utils;
 
 mod whitespace;
-pub use whitespace::{whitespace, ltrim, ltrim1};
+pub use whitespace::{whitespace, horizontal_whitespace, ltrim, ltrim1};
 
 mod seq;
 pub use seq::{seq, Seq};
@@ -43,6 +43,10 @@ mod flat_map;
 pub use flat_map::{flat_map, FlatMap};
 mod map;
 pub use map::map;
+mod value;
+pub use value::value;
+mod void;
+pub use void::void;
 mod span;
 pub use span::{spanned, recognize};
 mod state;

@@ -1,4 +1,5 @@
-use crate::parsec::{cut, ltrim, map, seq, succeed, tag, CutError, ParserInput};
+use crate::parsec::prelude::*;
+use crate::parsec::CutError;
 
 use super::*;
 
@@ -21,7 +22,7 @@ fn recognize_returns_the_entire_consumed_source_without_copying() {
     let source = String::from("!a  b?");
     let mut input = ParserInput::new(&source);
     input.set_byte_position(1);
-    let inner = map(seq(tag("a"), ltrim(tag("b"))), |_| 42);
+    let inner = value(seq(tag("a"), ltrim(tag("b"))), 42);
 
     let (text, remaining) = recognize(inner).parse(input).unwrap();
 

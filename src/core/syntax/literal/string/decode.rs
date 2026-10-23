@@ -1,28 +1,14 @@
 use std::borrow::Cow;
 
-use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation, ParseError};
 
-use super::err::JsonError;
+use super::err::StringLiteralError;
 
-pub(crate) fn string<'a>() -> impl Parser<'a, Output = Cow<'a, str>> {
-    let grammar = seq!(
-        tag("\""),
-        cut(seq!(
-            take(|ch, escaped, _| escaped || ch != '"', 0..),
-            tag("\"")
-        ))
-    );
-
-    flat_map(spanned(grammar), |(span, (_, (raw, _))), input| {
-        let value = decode(raw, span.start + 1)?;
-
-        Ok((value, input))
-    })
-}
+#[cfg(test)]
+mod tests;
 
 /// Decode escapes separately from finding the closing quote; plain strings stay borrowed.
-fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseError>> {
+pub(crate) fn decode_string(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseError>> {
     let mut chars = raw.char_indices();
     let mut decoded = String::new();
     let has_escapes = raw.contains('\\');
@@ -30,13 +16,13 @@ fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseErr
     while let Some((offset, ch)) = chars.next() {
         let failure_byte = start_byte + offset;
 
-        let error = |message| -> Box<dyn ParseError> { JsonError::new(ErrorLocation {
+        let error = |message| -> Box<dyn ParseError> { StringLiteralError::new(ErrorLocation {
             start_byte: start_byte - 1,
             failure_byte,
             found_char: Some(ch),
         }, message) };
 
-        if ch <= '\u{1f}' {
+        if ch <= '\u{1f}' && ch != '\t' {
             return Err(error("Unescaped control character in string"));
         }
 
@@ -50,6 +36,7 @@ fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseErr
 
         let escaped = match chars.next() {
             Some((_, '"')) => '"',
+            Some((_, '\'')) => '\'',
             Some((_, '\\')) => '\\',
             Some((_, '/')) => '/',
             Some((_, 'b')) => '\u{8}',
@@ -58,10 +45,12 @@ fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseErr
             Some((_, 'r')) => '\r',
             Some((_, 't')) => '\t',
             Some((_, 'u')) => {
+                // Each Unicode escape encodes one UTF-16 code unit, even in a UTF-8 source.
                 let first = hex_quad(&mut chars)
                     .ok_or_else(|| error("Expected four hexadecimal digits after \\u"))?;
 
                 let scalar = if (0xd800..=0xdbff).contains(&first) {
+                    // A high surrogate requires a second escape containing a low surrogate.
                     if !matches!(chars.next(), Some((_, '\\'))) ||
                         !matches!(chars.next(), Some((_, 'u'))) {
                         return Err(error("Expected a low surrogate after a high surrogate"));
@@ -88,6 +77,7 @@ fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseErr
     Ok(if has_escapes { Cow::Owned(decoded) } else { Cow::Borrowed(raw) })
 }
 
+/// Reads exactly four hexadecimal digits, leaving following characters untouched.
 fn hex_quad(chars: &mut std::str::CharIndices<'_>) -> Option<u32> {
     let mut value = 0;
 

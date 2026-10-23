@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::parsec::prelude::*;
 
 use super::super::identifier;
-use super::string::string;
+use super::super::literal::string;
 use super::{json, JsonKind, JsonProperty};
 
 pub(crate) fn object<'a>() -> impl Parser<'a, Output = JsonKind<'a>> {

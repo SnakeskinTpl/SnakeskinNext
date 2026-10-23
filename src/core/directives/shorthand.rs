@@ -9,7 +9,9 @@ use crate::core::syntax::json::{json, JsonKind, JsonValue};
 use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation, ParseError};
 
-use super::{Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition};
+use super::{
+    Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition,
+};
 
 mod err;
 use err::{DuplicateShorthandError, ShorthandConfigError};

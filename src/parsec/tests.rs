@@ -41,7 +41,7 @@ fn alternatives_do_not_try_second_branch_after_non_recoverable_error() {
     assert_no_progress(error.as_ref());
     assert_eq!(calls.get(), 0);
 
-    let error = choice(map(repeat(succeed(), ..), |_| ()), second())
+    let error = choice(void(repeat(succeed(), ..)), second())
         .parse(ParserInput::new("x"))
         .unwrap_err();
 
@@ -58,7 +58,7 @@ fn second_branch_non_recoverable_error_wins_over_further_mismatch() {
     assert_no_progress(error.as_ref());
     assert_eq!(error.byte_position(), 0);
 
-    let error = choice(map(tag("abc"), |_| ()), map(repeat(succeed(), ..), |_| ()))
+    let error = choice(void(tag("abc")), void(repeat(succeed(), ..)))
         .parse(ParserInput::new("abX"))
         .unwrap_err();
 
@@ -76,7 +76,7 @@ fn nested_repeat_propagates_non_recoverable_error_regardless_of_minimum() {
     }
 
     let inner = flat_map(tag("a"), |_, input| repeat(succeed(), ..).parse(input));
-    let parser = repeat(choice(map(tag("x"), |_| vec![]), inner), 1..);
+    let parser = repeat(choice(super::value(tag("x"), vec![]), inner), 1..);
 
     let error = parser.parse(ParserInput::new("xa")).unwrap_err();
 

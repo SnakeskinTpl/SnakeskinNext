@@ -3,6 +3,29 @@ use crate::parsec::*;
 use super::*;
 
 #[test]
+fn horizontal_whitespace_requires_a_space_or_tab_and_preserves_source_slice() {
+    let source = "! \t  \r\ncontent";
+    let mut input = ParserInput::new(source);
+    input.set_byte_position(1);
+
+    let (spaces, remaining) = horizontal_whitespace().parse(input).unwrap();
+
+    assert_eq!(spaces, " \t  ");
+    assert_eq!(spaces.as_ptr(), source[1..].as_ptr());
+    assert_eq!(remaining.peek(), Some('\r'));
+}
+
+#[test]
+fn horizontal_whitespace_does_not_consume_line_breaks_or_other_unicode_whitespace() {
+    for source in ["", "text", "\n", "\r\n", "\u{00a0}", "\u{2003}"] {
+        let error = horizontal_whitespace().parse(ParserInput::new(source)).unwrap_err();
+
+        assert!(error.is_recoverable());
+        assert_eq!(error.location().failure_byte, 0);
+    }
+}
+
+#[test]
 fn required_trim_skips_unicode_whitespace_and_preserves_inner_output() {
     let source = "! \t\r\n\u{2003}value ";
     let mut input = ParserInput::new(source);

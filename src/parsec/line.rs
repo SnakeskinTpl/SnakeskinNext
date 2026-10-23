@@ -1,6 +1,5 @@
-use crate::seq;
-
-use super::{choice, input_start, lookup, map, not, parser, tag, take, take_match, ErrorLocation, Parser};
+use super::prelude::*;
+use super::ErrorLocation;
 
 mod err;
 pub use err::LineStartError;
@@ -39,7 +38,7 @@ pub fn line_indent<'a>() -> impl Parser<'a, Output = &'a str> {
     map(
         seq!(
             line_start(),
-            take(|ch, _, _| ch == ' ' || ch == '\t', 0..),
+            recognize(opt(horizontal_whitespace())),
             lookup(take_match(not(line_break()), 1..=1))
         ),
         |(((), indent), _)| indent

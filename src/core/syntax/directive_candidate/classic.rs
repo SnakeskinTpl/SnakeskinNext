@@ -23,7 +23,7 @@ pub(crate) fn classic_directive_start<'a>(
 
     parser(move |input| {
         if let Some(binding) = shorthands.and_then(|registry| registry.find_classic_opening(&input)) {
-            return map(tag(binding.opening.as_ref()), |_| DirectiveMode::Regular).parse(input);
+            return value(tag(binding.opening.as_ref()), DirectiveMode::Regular).parse(input);
         }
 
         builtin.parse(input)

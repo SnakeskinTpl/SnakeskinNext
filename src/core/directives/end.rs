@@ -2,7 +2,9 @@ use crate::core::syntax::identifier;
 use crate::core::shorthands::ShorthandDefinition;
 use crate::parsec::prelude::*;
 
-use super::{Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition};
+use super::{
+    Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition,
+};
 
 pub(crate) struct End {
     definition: DirectiveDefinition<'static>,

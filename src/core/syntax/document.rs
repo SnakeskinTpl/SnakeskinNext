@@ -89,14 +89,14 @@ pub(crate) fn document<'a>(
             let line_content = take_match(
                 not(choice(
                     candidate_start(shorthands),
-                    map(line_break(), |_| ())
+                    void(line_break())
                 )),
                 1..
             );
 
             let text_fragment = choice(
-                map(seq(line_content, opt(line_break())), |_| ()),
-                map(line_break(), |_| ())
+                void(seq(line_content, opt(line_break()))),
+                void(line_break())
             );
 
             let (_, remaining) = text_fragment.parse(input)?;
@@ -180,22 +180,19 @@ fn candidate_start<'a>(
 ) -> impl Parser<'a, Output = ()> {
     choice(
         classic_candidate_start(shorthands),
-        map(jade_like_line_start(shorthands), |_| ())
+        void(jade_like_line_start(shorthands))
     )
 }
 
 fn classic_candidate_start<'a>(shorthands: Option<&ShorthandRegistry<'_>>) -> impl Parser<'a, Output = ()> {
-    map(
-        seq(classic_directive_start(shorthands), not(tag("}"))),
-        |_| ()
-    )
+    void(seq(classic_directive_start(shorthands), not(tag("}"))))
 }
 
 /// Reads indentation only at a physical line start, then checks the JadeLike marker.
 fn jade_like_line_start<'a>(
     shorthands: Option<&ShorthandRegistry<'_>>,
 ) -> impl Parser<'a, Output = &'a str> {
-    let indent = take(|ch, _, _| ch == ' ' || ch == '\t', 0..);
+    let indent = recognize(opt(horizontal_whitespace()));
 
     map(
         seq!(

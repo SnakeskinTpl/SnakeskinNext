@@ -22,19 +22,19 @@ pub(crate) fn jade_like_directive_start<'a>(
         let binding = shorthands.and_then(|registry| registry.find_opening(&input));
 
         if let Some(binding) = binding {
-            return map(tag(binding.opening.as_ref()), |_| DirectiveMode::Regular).parse(input);
+            return value(tag(binding.opening.as_ref()), DirectiveMode::Regular).parse(input);
         }
 
         choice(
-            map(tag("-"), |_| DirectiveMode::Regular),
-            map(tag("#"), |_| DirectiveMode::Extended)
+            value(tag("-"), DirectiveMode::Regular),
+            value(tag("#"), DirectiveMode::Extended)
         ).parse(input)
     });
 
     map(
         seq(
             marker,
-            take(|ch, _, _| ch == ' ' || ch == '\t', 1..),
+            horizontal_whitespace(),
         ),
 
         |(mode, _)| mode,
@@ -187,9 +187,11 @@ fn ends_line(input: &ParserInput<'_>) -> bool {
     let mut remaining = input.clone();
     remaining.next();
 
-    while matches!(remaining.peek(), Some(' ' | '\t')) {
-        remaining.next();
-    }
-
-    matches!(remaining.peek(), None | Some('\n' | '\r'))
+    seq(
+        opt(horizontal_whitespace()),
+        choice(
+            void(choice(tag("\n"), tag("\r"))),
+            input_end()
+        )
+    ).parse(remaining).is_ok()
 }

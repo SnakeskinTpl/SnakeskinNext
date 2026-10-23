@@ -8,6 +8,11 @@ pub fn whitespace<'a>() -> impl Parser<'a, Output = &'a str> {
     take(|ch, _, _| ch.is_whitespace(), 1..)
 }
 
+/// Consumes one or more ASCII spaces or tabs, leaving line breaks untouched.
+pub fn horizontal_whitespace<'a>() -> impl Parser<'a, Output = &'a str> {
+    take(|ch, _, _| ch == ' ' || ch == '\t', 1..)
+}
+
 /// Skips leading Unicode whitespace, including line breaks, then runs the parser.
 /// Leaves trailing whitespace untouched and calls the parser even at end of input.
 pub fn ltrim<'a, P: Parser<'a>>(inner: P) -> impl Parser<'a, Output = P::Output> {

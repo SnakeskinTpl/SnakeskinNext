@@ -44,9 +44,8 @@ impl<'a> Processor<'a> {
                 return Err(RegistrationError { name: name.into(), reason: "Empty shorthand delimiter" });
             }
 
-            if
-                self.context.shorthands.get(shorthand.opening).is_some() ||
-                shorthands[..index].iter().any(|previous| previous.opening == shorthand.opening)
+            if self.context.shorthands.get(shorthand.opening).is_some() ||
+               shorthands[..index].iter().any(|previous| previous.opening == shorthand.opening)
             {
                 return Err(RegistrationError { name: shorthand.opening.into(), reason: "Shorthand is already registered" });
             }

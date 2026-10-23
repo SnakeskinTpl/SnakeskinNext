@@ -14,6 +14,53 @@ fn complete(source: &str) -> Result<JsonValue<'_>, Box<dyn crate::parsec::ParseE
 }
 
 #[test]
+fn configuration_strings_use_the_same_rules_as_language_literals() {
+    for (source, expected) in [
+        (r#""\'""#, "'"),
+        ("'text'", "text"),
+        (r#"r"\n""#, r"\n"),
+        ("\"a\tb\"", "a\tb"),
+        ("\"\n  foo\n    bar\n\"", "foo\n  bar"),
+    ] {
+        let value = complete(source).unwrap();
+
+        assert_eq!(value.kind, JsonKind::String(expected.into()), "{source:?}");
+        assert_eq!(value.span, 0..source.len());
+    }
+}
+
+#[test]
+fn configuration_object_keys_accept_language_strings_and_keep_source_spans() {
+    let source = r#"{'opening': r'\n', r'closing': 'it\'s'}"#;
+
+    let value = complete(source).unwrap();
+    let JsonKind::Object(properties) = value.kind else { panic!("Expected an object") };
+
+    assert_eq!(properties[0].key, "opening");
+    assert_eq!(&source[properties[0].key_span.clone()], "'opening'");
+    assert_eq!(properties[0].value.kind, JsonKind::String(r"\n".into()));
+    assert_eq!(properties[1].key, "closing");
+    assert_eq!(&source[properties[1].key_span.clone()], "r'closing'");
+    assert_eq!(properties[1].value.kind, JsonKind::String("it's".into()));
+}
+
+#[test]
+fn boolean_values_use_shared_keyword_boundaries() {
+    for (source, expected) in [("true,", true), ("false]", false)] {
+        let (value, remaining) = json().parse(ParserInput::new(source)).unwrap();
+
+        assert_eq!(value.kind, JsonKind::Bool(expected));
+        assert_eq!(value.span, 0..source.len() - 1);
+
+        assert_eq!(remaining.byte_position(), source.len() - 1);
+    }
+
+    for source in ["trueValue", "false_", "true1", "false\u{0436}"] {
+        assert!(json().parse(ParserInput::new(source)).is_err(), "{source:?}");
+    }
+}
+
+#[test]
 fn parses_nested_configuration_with_identifier_and_quoted_keys() {
     let source = r#"{ opening: "<", "closing": ">", options: [true, false, null, {depth: 2}] }"#;
 
