@@ -1,9 +1,13 @@
 use std::error::Error;
 
 mod tag;
-pub use tag::{tag, succeed, Tag, TagError};
+pub use tag::{tag, Tag, TagError};
+mod succeed;
+pub use succeed::succeed;
 mod take;
 pub use take::{take, try_take, TakeError, TryTake};
+mod rest;
+pub use rest::rest;
 mod take_match;
 pub use take_match::{take_match, TakeMatch, TakeMatchError};
 mod utils;

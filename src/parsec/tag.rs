@@ -6,11 +6,6 @@ pub use err::TagError;
 #[cfg(test)]
 mod tests;
 
-/// Always succeeds without consuming input.
-pub fn succeed() -> Tag<&'static str> {
-    tag("")
-}
-
 /// Matches an exact prefix and returns a slice of the input source.
 /// An empty tag succeeds without advancing the cursor.
 pub fn tag<T: AsRef<str>>(tag: T) -> Tag<T> {
