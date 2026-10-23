@@ -14,6 +14,9 @@ fn shape(expression: &Expression<'_>) -> String {
         ExpressionKind::Identifier(name) => name.to_string(),
         ExpressionKind::Literal(value) => format!("{value:?}"),
         ExpressionKind::Group(inner) => format!("Group({})", shape(inner)),
+        ExpressionKind::Cast { target, operand } => {
+            format!("Cast({:?}, {})", target.kind, shape(operand))
+        }
         ExpressionKind::Field { object, name, .. } => format!("Field({}, {name})", shape(object)),
         ExpressionKind::Call { callee, arguments, .. } => format!("Call({}, [{}])", shape(callee), arguments.iter().map(shape).collect::<Vec<_>>().join(", ")),
         ExpressionKind::Index { object, index, .. } => format!("Index({}, {})", shape(object), shape(index)),
@@ -463,4 +466,75 @@ fn unicode_fields_keep_byte_ranges_and_index_expressions_keep_precedence() {
     assert_eq!(name_span, 4..6);
     assert_eq!(parsed.span, 0..source.len());
     assert_eq!(shape(&index), "Add(a, Multiply(b, c))");
+}
+
+#[test]
+fn casts_bind_like_unary_operators_and_preserve_postfix_chains() {
+    for (source, expected) in [
+        ("<Int>a + b", "Add(Cast(Named(\"Int\"), a), b)"),
+        ("<Int>f().value", "Cast(Named(\"Int\"), Field(Call(f, []), value))"),
+        ("<Int>(a + b)", "Cast(Named(\"Int\"), Group(Add(a, b)))"),
+        ("!<Bool>flag", "Not(Cast(Named(\"Bool\"), flag))"),
+        ("<Bool>!flag", "Cast(Named(\"Bool\"), Not(flag))"),
+        ("<Int><Other>value", "Cast(Named(\"Int\"), Cast(Named(\"Other\"), value))"),
+        ("a < <Int>b", "Less(a, Cast(Named(\"Int\"), b))"),
+    ] {
+        let parsed = complete(source).unwrap();
+
+        assert_eq!(shape(&parsed), expected, "{source:?}");
+    }
+}
+
+#[test]
+fn casts_accept_nested_type_and_value_arguments() {
+    use super::super::type_syntax::{TypeSyntaxKind, TypeArgumentSyntax};
+
+    for source in ["<Int<64>>1", "<Opt<Vec<Str>>>value", "<Array<Int, 3>>items"] {
+        let parsed = complete(source).unwrap();
+        let ExpressionKind::Cast { target, operand } = parsed.kind else { panic!("Expected cast") };
+        let TypeSyntaxKind::Applied { arguments, .. } = target.kind else { panic!("Expected applied type") };
+
+        assert!(!arguments.is_empty());
+        assert_eq!(parsed.span, 0..source.len());
+        assert_eq!(operand.span.end, source.len());
+
+        if source == "<Int<64>>1" {
+            assert!(matches!(arguments[0], TypeArgumentSyntax::Value(_)));
+            assert!(matches!(operand.kind, ExpressionKind::Literal(LiteralKind::Number(_))));
+        }
+    }
+}
+
+#[test]
+fn cast_ranges_exclude_whitespace_and_keep_absolute_offsets() {
+    use super::super::type_syntax::TypeSyntaxKind;
+
+    let source = "  < Bool > flag ";
+
+    let (parsed, remaining) = expression().parse(ParserInput::with_offset(source, 20)).unwrap();
+    let ExpressionKind::Cast { target, operand } = parsed.kind else { panic!("Expected cast") };
+
+    assert_eq!(parsed.span, 22..35);
+    assert_eq!(target.span, 24..28);
+    assert_eq!(target.kind, TypeSyntaxKind::Named("Bool"));
+    assert_eq!(operand.span, 31..35);
+    assert_eq!(remaining.byte_position(), 35);
+}
+
+#[test]
+fn incomplete_casts_commit_after_the_opening_bracket() {
+    for (source, position) in [
+        ("<", 1),
+        ("<>flag", 1),
+        ("<bool>flag", 1),
+        ("<Bool", 5),
+        ("<Bool>", 6),
+        ("<Bool> ", 7),
+        ("<Opt<Bool>value", 10),
+    ] {
+        let error = complete(source).unwrap_err();
+
+        assert!(!error.is_recoverable(), "{source:?}");
+        assert_eq!(error.location().failure_byte, position, "{source:?}");
+    }
 }

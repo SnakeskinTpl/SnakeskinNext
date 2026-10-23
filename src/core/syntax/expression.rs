@@ -3,6 +3,7 @@ use std::ops::Range;
 use crate::parsec::Parser;
 
 use super::literal::LiteralKind;
+use super::type_syntax::TypeSyntax;
 
 mod primary;
 mod postfix;
@@ -26,28 +27,39 @@ pub(crate) struct Expression<'a> {
 pub(crate) enum ExpressionKind<'a> {
     Literal(LiteralKind<'a>),
     Identifier(&'a str),
+
     /// Parentheses remain explicit for diagnostics and tooling.
     Group(Box<Expression<'a>>),
+
     Field {
         object: Box<Expression<'a>>,
         name: &'a str,
         name_span: Range<usize>,
     },
+
     Call {
         callee: Box<Expression<'a>>,
         arguments: Vec<Expression<'a>>,
         arguments_span: Range<usize>,
     },
+
     Index {
         object: Box<Expression<'a>>,
         index: Box<Expression<'a>>,
         brackets_span: Range<usize>,
     },
+
+    Cast {
+        target: TypeSyntax<'a>,
+        operand: Box<Expression<'a>>,
+    },
+
     Unary {
         operator: UnaryOperator,
         operator_span: Range<usize>,
         operand: Box<Expression<'a>>,
     },
+
     Binary {
         operator: BinaryOperator,
         operator_span: Range<usize>,
