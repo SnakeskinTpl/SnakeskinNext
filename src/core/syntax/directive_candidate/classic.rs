@@ -22,13 +22,23 @@ pub(crate) fn classic_directive_candidate<'a>() -> impl Parser<'a, Output = Dire
     let content = flat_map(spanned(content), |(span, (name, body)), input| {
         let content = input.source_slice(span);
 
-        Ok((DirectiveCandidate { form: DirectiveForm::Classic, extended: false, name, body, content }, input))
+        Ok((DirectiveCandidate {
+            form: DirectiveForm::Classic,
+            extended: false,
+            opening_len: 0,
+            closing_len: 0,
+            name,
+            body,
+            content,
+        }, input))
     });
 
     map(
-        seq!(classic_directive_start(), content, tag("}")),
-        |((extended, mut directive), _)| {
+        seq!(spanned(classic_directive_start()), content, tag("}")),
+        |(((opening_span, extended), mut directive), closing)| {
             directive.extended = extended;
+            directive.opening_len = opening_span.len();
+            directive.closing_len = closing.len();
             directive
         },
     )

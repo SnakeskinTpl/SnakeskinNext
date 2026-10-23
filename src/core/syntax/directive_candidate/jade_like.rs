@@ -30,17 +30,19 @@ pub(crate) fn jade_like_directive_start<'a>() -> impl Parser<'a, Output = bool> 
 /// Indentation is supplied by the caller and is not consumed here.
 pub(crate) fn jade_like_directive_candidate<'a>(indent: &'a str) -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
     let parser = seq(
-        jade_like_directive_start(),
+        spanned(jade_like_directive_start()),
         body(),
     );
 
-    flat_map(parser, move |(extended, content), input| {
+    flat_map(parser, move |((opening_span, extended), content), input| {
         let (name, remaining) = opt(directive_name()).parse(ParserInput::new(content))?;
         let body = &content[remaining.byte_position()..];
 
         Ok((DirectiveCandidate {
             form: DirectiveForm::JadeLike { indent },
             extended,
+            opening_len: indent.len() + opening_span.len(),
+            closing_len: 0,
             name,
             body,
             content,

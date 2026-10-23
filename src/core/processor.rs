@@ -4,7 +4,6 @@ use crate::parsec::{ErrorLocation, ParseError, ParserInput};
 
 use super::directives::{Directive, DirectiveContext};
 use super::syntax::document::{SyntaxDocument, SyntaxNode};
-use super::syntax::DirectiveForm;
 
 mod err;
 use err::{ProcessError, ProcessErrorKind, RegistrationError};
@@ -46,10 +45,8 @@ impl<'a> Processor<'a> {
                 continue;
             };
 
-            // Classic candidates exclude their closing brace from content and body.
-            let closing_len = usize::from(matches!(candidate.form, DirectiveForm::Classic));
-            let content_end = span.end - closing_len;
-            let content_start = content_end - candidate.content.len();
+            let content_start = span.start + candidate.opening_len;
+            let content_end = span.end - candidate.closing_len;
 
             let name_location = ErrorLocation {
                 start_byte: span.start,

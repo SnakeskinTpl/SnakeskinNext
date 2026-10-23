@@ -3,6 +3,42 @@ use crate::parsec::*;
 use super::*;
 
 #[test]
+fn directive_delimiter_lengths_locate_content_in_original_source() {
+    let cases = [
+        ("{foo \u{0436}}", 1, 1),
+        ("#{foo \u{0436}}", 2, 1),
+        ("- foo \u{0436}", 2, 0),
+        (" \t# \t foo \u{0436}", 6, 0),
+        ("  - foo {\n\u{0436}\n}", 4, 0),
+    ];
+
+    for (source, opening_len, closing_len) in cases {
+        let prefix = "previous content\n";
+        let full_source = format!("{prefix}{source}");
+        let mut input = ParserInput::new(&full_source);
+        input.set_byte_position(prefix.len());
+
+        let (document, remaining) = document().parse(input).unwrap();
+        let Some(SyntaxNode::Directive { span, candidate }) = document.nodes.first() else {
+            panic!("Expected a directive for {source:?}");
+        };
+
+        assert_eq!(candidate.opening_len, opening_len, "{source:?}");
+        assert_eq!(candidate.closing_len, closing_len, "{source:?}");
+
+        let content_span = span.start + candidate.opening_len..span.end - candidate.closing_len;
+
+        assert_eq!(remaining.source_slice(content_span.clone()), candidate.content);
+        assert_eq!(content_span.len(), candidate.content.len());
+
+        let body_start = content_span.end - candidate.body.len();
+
+        assert_eq!(remaining.source_slice(body_start..content_span.end), candidate.body);
+        assert!(remaining.is_at_end());
+    }
+}
+
+#[test]
 fn classic_directive_after_blank_line_closes_jade_like_block() {
     let source = "- if foo > 2\n  ...\n\n{bla}";
     let classic_start = source.find("{bla}").unwrap();

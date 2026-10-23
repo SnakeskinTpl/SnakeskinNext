@@ -26,19 +26,25 @@ pub(crate) trait Directive {
 
 #[derive(Debug, Default)]
 pub(crate) struct DirectiveDefinition<'a> {
+    /// Full directive name, e.g. `shorthand`.
     pub name: &'a str,
 
+    /// Opens a block requiring an explicit or inferred end.
     pub block: bool,
+    /// Requires non-whitespace content after the name.
     pub requires_body: bool,
+    /// Allows another occurrence of this directive inside its own block.
     pub allows_self_nesting: bool,
 
+    /// Named groups used by placement selectors.
     pub groups: Vec<&'a str>,
 
-    /// None allows any parent; an empty list allows none.
+    /// Allowed immediate parents; None allows any, an empty list allows none.
     pub allowed_parents: Option<Vec<DirectiveSelector<'a>>>,
 
-    /// None allows any child; an empty list allows none.
+    /// Allowed immediate children; None allows any, an empty list allows none.
     pub allowed_children: Option<Vec<DirectiveSelector<'a>>>,
+    /// Placement constraints checked against the ancestor chain.
     pub ancestors: AncestorRules<'a>,
 
     /// Constructs this directive may continue, such as else continuing if.
