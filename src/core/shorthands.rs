@@ -43,7 +43,7 @@ impl<'a> ShorthandRegistry<'a> {
             .filter(|binding| {
                 seq(
                     tag(binding.opening.as_ref()),
-                    not(horizontal_whitespace())
+                    not(hspace())
                 ).parse(input.clone()).is_ok()
             })
 

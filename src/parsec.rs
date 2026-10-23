@@ -13,7 +13,7 @@ pub use take_match::{take_match, TakeMatch, TakeMatchError};
 mod utils;
 
 mod whitespace;
-pub use whitespace::{whitespace, horizontal_whitespace, ltrim, ltrim1};
+pub use whitespace::{space, hspace, ltrim, ltrim1};
 
 mod seq;
 pub use seq::{seq, Seq};
@@ -35,7 +35,7 @@ pub use cut::{cut, Cut, CutError};
 mod anchor;
 pub use anchor::{input_start, input_end, InputStart, InputEnd, InputStartError, InputEndError};
 mod line;
-pub use line::{line_start, line_break, line_indent, LineStartError};
+pub use line::{line_start, line_end, line_break, line_indent, LineStartError};
 
 mod rec;
 pub use rec::{rec, Rec};

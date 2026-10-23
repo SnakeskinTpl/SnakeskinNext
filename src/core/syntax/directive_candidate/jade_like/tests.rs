@@ -151,7 +151,7 @@ fn jade_like_preserves_indentation_and_extended_mode() {
     for (marker, mode) in [("-", DirectiveMode::Regular), ("#", DirectiveMode::Extended)] {
         let source = format!(" \t{marker} foo value  \nnext");
 
-        let parser = flat_map(recognize(opt(horizontal_whitespace())), |indent, input| {
+        let parser = flat_map(recognize(opt(hspace())), |indent, input| {
             jade_like_directive_candidate(indent, None).parse(input)
         });
 

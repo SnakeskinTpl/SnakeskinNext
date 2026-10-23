@@ -26,6 +26,12 @@ pub fn line_start<'a>() -> impl Parser<'a, Output = ()> {
     }))
 }
 
+/// Matches before LF or CRLF, or at the end of the input slice, without consuming.
+/// A standalone CR is not a line boundary.
+pub fn line_end<'a>() -> impl Parser<'a, Output = ()> {
+    choice(peek(line_break()), input_end())
+}
+
 /// Consumes one LF or CRLF line ending and returns its original source slice.
 /// A standalone CR is not a line ending.
 pub fn line_break<'a>() -> impl Parser<'a, Output = &'a str> {
@@ -38,7 +44,7 @@ pub fn line_indent<'a>() -> impl Parser<'a, Output = &'a str> {
     map(
         seq!(
             line_start(),
-            recognize(opt(horizontal_whitespace())),
+            recognize(opt(hspace())),
             peek(take_match(not(line_break()), 1..=1))
         ),
         |(((), indent), _)| indent

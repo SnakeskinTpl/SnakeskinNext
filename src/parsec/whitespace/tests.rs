@@ -8,7 +8,7 @@ fn horizontal_whitespace_requires_a_space_or_tab_and_preserves_source_slice() {
     let mut input = ParserInput::new(source);
     input.set_byte_position(1);
 
-    let (spaces, remaining) = horizontal_whitespace().parse(input).unwrap();
+    let (spaces, remaining) = hspace().parse(input).unwrap();
 
     assert_eq!(spaces, " \t  ");
     assert_eq!(spaces.as_ptr(), source[1..].as_ptr());
@@ -18,7 +18,7 @@ fn horizontal_whitespace_requires_a_space_or_tab_and_preserves_source_slice() {
 #[test]
 fn horizontal_whitespace_does_not_consume_line_breaks_or_other_unicode_whitespace() {
     for source in ["", "text", "\n", "\r\n", "\u{00a0}", "\u{2003}"] {
-        let error = horizontal_whitespace().parse(ParserInput::new(source)).unwrap_err();
+        let error = hspace().parse(ParserInput::new(source)).unwrap_err();
 
         assert!(error.is_recoverable());
         assert_eq!(error.location().failure_byte, 0);

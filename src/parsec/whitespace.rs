@@ -4,12 +4,12 @@ use super::{flat_map, take, Parser};
 mod tests;
 
 /// Consumes one or more Unicode whitespace characters, including line breaks.
-pub fn whitespace<'a>() -> impl Parser<'a, Output = &'a str> {
+pub fn space<'a>() -> impl Parser<'a, Output = &'a str> {
     take(|ch, _, _| ch.is_whitespace(), 1..)
 }
 
 /// Consumes one or more ASCII spaces or tabs, leaving line breaks untouched.
-pub fn horizontal_whitespace<'a>() -> impl Parser<'a, Output = &'a str> {
+pub fn hspace<'a>() -> impl Parser<'a, Output = &'a str> {
     take(|ch, _, _| ch == ' ' || ch == '\t', 1..)
 }
 
@@ -24,6 +24,6 @@ pub fn ltrim<'a, P: Parser<'a>>(inner: P) -> impl Parser<'a, Output = P::Output>
 
 /// Requires leading Unicode whitespace, then returns only the inner parser's output.
 pub fn ltrim1<'a, P: Parser<'a>>(inner: P) -> impl Parser<'a, Output = P::Output> {
-    flat_map(whitespace(), move |_, input| inner.parse(input))
+    flat_map(space(), move |_, input| inner.parse(input))
 }
 

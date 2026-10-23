@@ -8,7 +8,7 @@ pub(crate) fn directive_name<'a>() -> impl Parser<'a, Output = &'a str> {
         seq!(
             identifier(),
             // Required separator: whitespace, e.g. a space in "foo value" or a newline.
-            whitespace()
+            space()
         ),
         |(name, _)| name
     )

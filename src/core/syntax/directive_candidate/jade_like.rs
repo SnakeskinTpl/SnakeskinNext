@@ -34,7 +34,7 @@ pub(crate) fn jade_like_directive_start<'a>(
     map(
         seq(
             marker,
-            horizontal_whitespace(),
+            hspace(),
         ),
 
         |(mode, _)| mode,
@@ -188,7 +188,7 @@ fn ends_line(input: &ParserInput<'_>) -> bool {
     remaining.next();
 
     seq(
-        opt(horizontal_whitespace()),
+        opt(hspace()),
         choice(
             void(choice(tag("\n"), tag("\r"))),
             input_end()

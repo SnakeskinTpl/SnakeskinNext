@@ -192,7 +192,7 @@ fn classic_candidate_start<'a>(shorthands: Option<&ShorthandRegistry<'_>>) -> im
 fn jade_like_line_start<'a>(
     shorthands: Option<&ShorthandRegistry<'_>>,
 ) -> impl Parser<'a, Output = &'a str> {
-    let indent = recognize(opt(horizontal_whitespace()));
+    let indent = recognize(opt(hspace()));
 
     map(
         seq!(

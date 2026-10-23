@@ -35,9 +35,9 @@ fn lines<'a>() -> impl Parser<'a, Output = Vec<StringLine<'a>>> {
     map(
         seq!(
             // Discard whitespace after the opening quote and its framing line break.
-            void(seq(opt(horizontal_whitespace()), line_break())),
+            void(seq(opt(hspace()), line_break())),
             repeat(physical_line(), 0..),
-            opt(horizontal_whitespace()),
+            opt(hspace()),
             input_end()
         ),
 
@@ -50,7 +50,7 @@ fn physical_line<'a>() -> impl Parser<'a, Output = StringLine<'a>> {
     flat_map(
         seq(
             spanned(seq(
-                recognize(opt(horizontal_whitespace())),
+                recognize(opt(hspace())),
                 take_match(not(line_break()), 0..)
             )),
 
@@ -81,7 +81,7 @@ fn common_indent<'a>(lines: &[StringLine<'a>]) -> &'a str {
 fn line_join<'a>() -> impl Parser<'a, Output = ()> {
     void(seq!(
         tag("\\"),
-        opt(horizontal_whitespace()),
+        opt(hspace()),
         input_end()
     ))
 }

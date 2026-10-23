@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::cell::Cell;
 
-use crate::parsec::line_break;
+use crate::parsec::{line_break, line_end};
 use crate::parsec::prelude::*;
 
 mod decode;
@@ -24,7 +24,7 @@ pub(crate) fn string<'a>() -> impl Parser<'a, Output = Cow<'a, str>> {
             let start_byte = input.byte_position();
 
             // An opening quote followed only by spaces or tabs and a newline starts multiline mode.
-            let (multiline, _) = opt(peek(seq(opt(horizontal_whitespace()), line_break())))
+            let (multiline, _) = opt(peek(seq(opt(hspace()), line_break())))
                 .parse(input.clone())?;
 
             let multiline = multiline.is_some();
@@ -44,8 +44,8 @@ pub(crate) fn string<'a>() -> impl Parser<'a, Output = Cow<'a, str>> {
                                 // A multiline closing quote must be alone on its line, apart from indentation.
                                 let standalone_end = seq!(
                                     tag(quote),
-                                    opt(horizontal_whitespace()),
-                                    choice(void(line_break()), input_end())
+                                    opt(hspace()),
+                                    line_end()
                                 );
 
                                 // Check both sides of the quote without consuming its trailing line break.

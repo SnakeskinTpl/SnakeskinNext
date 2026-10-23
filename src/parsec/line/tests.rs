@@ -3,6 +3,52 @@ use crate::parsec::{opt, seq, tag, ParserInput};
 use super::*;
 
 #[test]
+fn line_end_matches_before_line_breaks_and_at_eof_without_consuming() {
+    for (source, position) in [("", 0), ("text", 4), ("\u{0436}\nnext", 2), ("\u{0436}\r\nnext", 2)] {
+        let mut input = ParserInput::new(source);
+        input.set_byte_position(position);
+
+        let ((), remaining) = line_end().parse(input).unwrap();
+
+        assert_eq!(remaining.byte_position(), position);
+        assert_eq!(remaining.peek(), source[position..].chars().next());
+    }
+}
+
+#[test]
+fn line_end_rejects_ordinary_content_and_standalone_cr() {
+    for source in ["text", " ", "\r", "\rtext"] {
+        let error = line_end().parse(ParserInput::with_offset(source, 17)).unwrap_err();
+
+        assert!(error.is_recoverable());
+        assert_eq!(error.location().failure_byte, 17 + usize::from(source.starts_with('\r')));
+    }
+}
+
+#[test]
+fn line_end_leaves_crlf_for_the_line_break_parser() {
+    let parser = seq(line_end(), line_break());
+
+    let (((), ending), remaining) = parser.parse(ParserInput::with_offset("\r\nnext", 10)).unwrap();
+
+    assert_eq!(ending, "\r\n");
+    assert_eq!(remaining.byte_position(), 12);
+    assert_eq!(remaining.peek(), Some('n'));
+}
+
+#[test]
+fn line_end_matches_the_end_of_a_bounded_slice() {
+    let source = "text trailing";
+    let mut input = ParserInput::with_offset(&source[..4], 20);
+    input.set_byte_position(24);
+
+    let ((), remaining) = line_end().parse(input).unwrap();
+
+    assert_eq!(remaining.byte_position(), 24);
+    assert!(remaining.is_at_end());
+}
+
+#[test]
 fn matches_empty_input_and_first_line_without_consuming() {
     for source in ["", "я"] {
         let ((), remaining) = line_start().parse(ParserInput::new(source)).unwrap();
