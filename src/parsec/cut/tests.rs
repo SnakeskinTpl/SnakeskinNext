@@ -40,7 +40,7 @@ fn already_committed_errors_are_not_wrapped_again() {
 #[test]
 fn opening_check_allows_fallback_but_committed_body_does_not() {
     let parser = choice(
-        map(seq(lookup(tag("{")), cut(tag("{a}"))), |(_, value)| value),
+        map(seq(peek(tag("{")), cut(tag("{a}"))), |(_, value)| value),
         tag("text"),
     );
 

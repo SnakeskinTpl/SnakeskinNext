@@ -10,6 +10,7 @@
 - Order file headers consistently: imports first (standard library, external crates, crate-local paths, relative paths), then child modules with their re-exports, then the conditional test module. Separate import groups with blank lines.
 - Keep comments short and focused on contracts or behavior that is not obvious from the code.
 - Format long parser combinator compositions across multiple lines, placing arguments on separate lines and indenting nested calls to make the grammar easy to read. Keep short expressions compact.
+- Use `seq!` for sequences of three or more parsers rather than manually nesting `seq` calls. Keep nested groups only when they express a distinct grammar rule.
 - When wrapping expressions, keep binary operators at the end of the line with their left operand, never at the start of the next line (e.g. `condition_a &&` followed by `condition_b`). Preserve this style when formatting code.
 - Treat tests as documentation: separate setup, actions, assertions, and distinct scenario steps with blank lines.
 - Separate a multiline assertion from the following assertion with a blank line.

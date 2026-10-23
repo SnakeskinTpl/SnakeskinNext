@@ -24,7 +24,7 @@ pub(crate) fn string<'a>() -> impl Parser<'a, Output = Cow<'a, str>> {
             let start_byte = input.byte_position();
 
             // An opening quote followed only by spaces or tabs and a newline starts multiline mode.
-            let (multiline, _) = opt(lookup(seq(opt(horizontal_whitespace()), line_break())))
+            let (multiline, _) = opt(peek(seq(opt(horizontal_whitespace()), line_break())))
                 .parse(input.clone())?;
 
             let multiline = multiline.is_some();

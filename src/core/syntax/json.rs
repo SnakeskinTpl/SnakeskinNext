@@ -3,10 +3,9 @@ use std::ops::Range;
 
 use crate::parsec::prelude::*;
 
-use super::literal::{boolean, number, string, NumberLiteral};
+use super::literal::{boolean, null, number, string, NumberLiteral};
 
 mod array;
-mod null;
 mod object;
 
 #[cfg(test)]
@@ -39,7 +38,7 @@ pub(crate) struct JsonProperty<'a> {
 /// Leading whitespace is consumed; trailing input remains for the enclosing grammar.
 pub(crate) fn json<'a>() -> Box<dyn Parser<'a, Output = JsonValue<'a>> + 'a> {
     let value = choice!(
-        null::null(),
+        value(null(), JsonKind::Null),
         map(boolean(), JsonKind::Bool),
         map(string(), JsonKind::String),
         map(number(), JsonKind::Number),

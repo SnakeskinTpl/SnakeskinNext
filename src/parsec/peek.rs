@@ -5,14 +5,14 @@ mod tests;
 
 /// Requires a successful match, discarding its output and input changes.
 /// Propagates the inner parser's error unchanged on failure.
-pub fn lookup<'a, P: Parser<'a>>(parser: P) -> Lookup<P> {
-    Lookup(parser)
+pub fn peek<'a, P: Parser<'a>>(parser: P) -> Peek<P> {
+    Peek(parser)
 }
 
 #[derive(Debug)]
-pub struct Lookup<P>(P);
+pub struct Peek<P>(P);
 
-impl<'a, P: Parser<'a>> Parser<'a> for Lookup<P> {
+impl<'a, P: Parser<'a>> Parser<'a> for Peek<P> {
     type Output = ();
 
     fn parse(&self, input: ParserInput<'a>) -> ParserResult<'a, Self::Output> {

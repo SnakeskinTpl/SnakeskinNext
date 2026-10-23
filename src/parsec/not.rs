@@ -26,6 +26,7 @@ impl<'a, P: Parser<'a>> Parser<'a> for Not<P> {
                 failure_byte: input.byte_position(),
                 found_char: input.peek(),
             })),
+
             Err(error) if error.is_recoverable() => Ok(((), input)),
             Err(error) => Err(error),
         }

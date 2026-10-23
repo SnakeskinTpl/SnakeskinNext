@@ -39,7 +39,7 @@ pub fn line_indent<'a>() -> impl Parser<'a, Output = &'a str> {
         seq!(
             line_start(),
             recognize(opt(horizontal_whitespace())),
-            lookup(take_match(not(line_break()), 1..=1))
+            peek(take_match(not(line_break()), 1..=1))
         ),
         |(((), indent), _)| indent
     )

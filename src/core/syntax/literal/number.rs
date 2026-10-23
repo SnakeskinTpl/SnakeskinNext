@@ -36,8 +36,9 @@ pub(crate) enum NumberSuffix<'a> {
 pub(crate) fn number<'a>() -> impl Parser<'a, Output = NumberLiteral<'a>> {
     flat_map(spanned(digits()), |(integer_span, _), input| {
         // A single dot begins a fraction; `1..2` leaves the range operator untouched.
-        let fraction = seq(
-            seq(tag("."), not(tag("."))),
+        let fraction = seq!(
+            tag("."),
+            not(tag(".")),
             cut(digits())
         );
 
@@ -88,6 +89,7 @@ fn suffix<'a>() -> impl Parser<'a, Output = NumberSuffix<'a>> {
             choice!(tag("i"), tag("u"), tag("f")),
             opt(take(|ch, _, _| ch.is_ascii_digit(), 1..))
         ),
+
         |(kind, bits)| match kind {
             "i" => NumberSuffix::Int { bits },
             "u" => NumberSuffix::UInt { bits },

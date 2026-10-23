@@ -54,7 +54,7 @@ pub(crate) fn document<'a>(
             let start_byte = input.byte_position();
 
             let parser = seq!(
-                lookup(classic_candidate_start(shorthands)),
+                peek(classic_candidate_start(shorthands)),
                 cut(classic_directive_candidate(shorthands))
             );
 
@@ -198,7 +198,7 @@ fn jade_like_line_start<'a>(
         seq!(
             line_start(),
             indent,
-            lookup(jade_like_directive_start(shorthands))
+            peek(jade_like_directive_start(shorthands))
         ),
         |(((), indent), ())| indent,
     )

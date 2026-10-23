@@ -3,7 +3,7 @@ use SnakeskinNext::parsec::prelude::*;
 #[test]
 fn prelude_provides_combinator_functions_and_macros() {
     let grammar = seq!(
-        lookup(or!(tag("a"), tag("b"))),
+        peek(or!(tag("a"), tag("b"))),
         choice!(tag("a"), tag("b")),
         ltrim1(map(tag("value"), str::len))
     );

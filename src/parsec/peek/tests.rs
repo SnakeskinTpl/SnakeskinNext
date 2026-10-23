@@ -7,7 +7,7 @@ fn successful_match_preserves_original_position() {
     let mut input = ParserInput::new("!я🦀rest");
     input.set_byte_position(1);
 
-    let ((), remaining) = lookup(tag("я🦀")).parse(input).unwrap();
+    let ((), remaining) = peek(tag("я🦀")).parse(input).unwrap();
 
     assert_eq!(remaining.byte_position(), 1);
     assert_eq!(remaining.peek(), Some('я'));
@@ -18,7 +18,7 @@ fn failure_preserves_inner_error_context() {
     let mut input = ParserInput::new("!яx");
     input.set_byte_position(1);
 
-    let error = lookup(tag("яb")).parse(input).unwrap_err();
+    let error = peek(tag("яb")).parse(input).unwrap_err();
 
     assert_eq!(*error.location(), ErrorLocation { start_byte: 1, failure_byte: 3, found_char: Some('x') });
 
@@ -30,7 +30,7 @@ fn failure_preserves_inner_error_context() {
 
 #[test]
 fn incomplete_match_reports_end_of_input() {
-    let error = lookup(tag("ab")).parse(ParserInput::new("a")).unwrap_err();
+    let error = peek(tag("ab")).parse(ParserInput::new("a")).unwrap_err();
 
     assert_eq!(error.byte_position(), 1);
     assert_eq!(error.location().found_char, None);
@@ -38,15 +38,15 @@ fn incomplete_match_reports_end_of_input() {
 
 #[test]
 fn empty_success_is_allowed_at_end_of_input() {
-    let ((), remaining) = lookup(succeed()).parse(ParserInput::new("")).unwrap();
+    let ((), remaining) = peek(succeed()).parse(ParserInput::new("")).unwrap();
 
     assert_eq!(remaining.byte_position(), 0);
     assert!(remaining.is_at_end());
 }
 
 #[test]
-fn sequence_after_lookahead_reads_original_input() {
-    let parser = seq(lookup(tag("ab")), tag("ab"));
+fn sequence_after_peek_reads_original_input() {
+    let parser = seq(peek(tag("ab")), tag("ab"));
 
     let (((), output), remaining) = parser.parse(ParserInput::new("ab")).unwrap();
 
