@@ -9,7 +9,7 @@ use crate::core::syntax::json::{json, JsonKind, JsonValue};
 use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation, ParseError};
 
-use super::{Directive, DirectiveContext, DirectiveDefinition, DirectiveResult};
+use super::{Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition};
 
 mod err;
 use err::{DuplicateShorthandError, ShorthandConfigError};
@@ -42,14 +42,14 @@ impl Directive for Shorthand {
         &self,
         context: &mut DirectiveContext<'a>,
         body: ParserInput<'a>,
-    ) -> DirectiveResult {
+    ) -> DirectiveBeginResult<'a> {
         let (binding, remaining) = declaration().parse(body)?;
 
         // Register only after the complete declaration has been validated.
         match context.shorthands.entry(binding.opening.clone()) {
             Entry::Vacant(entry) => {
                 entry.insert(binding);
-                Ok(())
+                Ok(DirectiveAction::None)
             }
 
             Entry::Occupied(entry) => Err(Box::new(DuplicateShorthandError {

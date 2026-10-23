@@ -1,20 +1,23 @@
 //! Core directive implementations and body parsers.
 
-use crate::core::shorthands::ShorthandRegistry;
+use crate::core::shorthands::{ShorthandDefinition, ShorthandRegistry};
 use crate::parsec::{ParseError, ParserInput};
 
 mod shorthand;
 pub(crate) use shorthand::Shorthand;
 
+mod end;
+pub(crate) use end::End;
+
 pub(crate) trait Directive {
     fn definition(&self) -> &DirectiveDefinition<'_>;
 
-    /// Parses the directive body and begins processing this occurrence.
+    /// Parses the body and returns any action the processor must perform.
     fn begin<'a>(
         &self,
         context: &mut DirectiveContext<'a>,
         body: ParserInput<'a>,
-    ) -> DirectiveResult;
+    ) -> DirectiveBeginResult<'a>;
 
     /// Completes this occurrence; inline directives finish immediately after begin.
     fn end(&self, _context: &mut DirectiveContext<'_>) -> DirectiveResult {
@@ -26,6 +29,8 @@ pub(crate) trait Directive {
 pub(crate) struct DirectiveDefinition<'a> {
     /// Full directive name, e.g. `shorthand`.
     pub name: &'a str,
+    /// Alternative openings; explicit directive markers supply their own boundary.
+    pub shorthands: Vec<ShorthandDefinition<'a>>,
 
     /// Opens a block requiring an explicit or inferred end.
     pub block: bool,
@@ -70,3 +75,14 @@ pub(crate) struct DirectiveContext<'a> {
 
 // Reuse located parser diagnostics until semantic diagnostics are defined.
 pub(crate) type DirectiveResult = Result<(), Box<dyn ParseError>>;
+
+#[derive(Debug)]
+pub(crate) enum DirectiveAction<'a> {
+    /// Continue normal inline or block processing.
+    None,
+
+    /// Close the current block, optionally checking its registered name.
+    CloseBlock { name: Option<&'a str> },
+}
+
+pub(crate) type DirectiveBeginResult<'a> = Result<DirectiveAction<'a>, Box<dyn ParseError>>;

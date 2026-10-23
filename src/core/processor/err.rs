@@ -8,6 +8,10 @@ pub(crate) enum ProcessErrorKind {
     UnknownDirective { name: String },
     UnresolvedDirective,
     MissingBody { name: String },
+    UnexpectedEnd,
+    MismatchedEnd { expected: String, found: String },
+    UnclosedBlock { name: String },
+    CrossedImplicitEnd,
 }
 
 #[derive(Debug)]
@@ -28,6 +32,10 @@ impl Display for ProcessError {
             ProcessErrorKind::UnknownDirective { name } => write!(f, "Unknown directive {name:?}"),
             ProcessErrorKind::UnresolvedDirective => write!(f, "Cannot resolve directive without a name"),
             ProcessErrorKind::MissingBody { name } => write!(f, "Directive {name:?} requires a body"),
+            ProcessErrorKind::UnexpectedEnd => write!(f, "No open block to close"),
+            ProcessErrorKind::MismatchedEnd { expected, found } => write!(f, "Expected end of {expected:?}, found {found:?}"),
+            ProcessErrorKind::UnclosedBlock { name } => write!(f, "Unclosed block {name:?}"),
+            ProcessErrorKind::CrossedImplicitEnd => write!(f, "Implicit end crosses an unclosed block"),
         }?;
 
         write!(f, " at byte {}", self.location.failure_byte)
@@ -49,11 +57,12 @@ impl ParseError for ProcessError {
 #[derive(Debug)]
 pub(crate) struct RegistrationError {
     pub name: String,
+    pub reason: &'static str,
 }
 
 impl Display for RegistrationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Directive {:?} is already registered", self.name)
+        write!(f, "Cannot register {:?}: {}", self.name, self.reason)
     }
 }
 

@@ -3,6 +3,53 @@ use crate::parsec::*;
 use super::*;
 
 #[test]
+fn explicit_markers_resolve_paired_and_unpaired_content_openings() {
+    use crate::core::directives::{Directive, End, Shorthand};
+    use crate::core::shorthands::ShorthandBinding;
+    use super::super::directive_candidate::DirectiveMode;
+
+    let mut context = DirectiveContext::default();
+    let end = End::new();
+    let slash = &end.definition().shorthands[0];
+    context.shorthands.entry(slash.opening.into()).or_insert(ShorthandBinding {
+        opening: slash.opening.into(),
+        closing: None,
+        target: "end",
+        span: 0..0,
+        opening_span: 0..0,
+    });
+    Shorthand::new().begin(
+        &mut context,
+        ParserInput::new("tag { opening: \"<\", closing: \">\" }")
+    ).unwrap();
+
+    for (source, name, body, mode) in [
+        ("{/block}", "end", "block", DirectiveMode::Regular),
+        ("#{/block}", "end", "block", DirectiveMode::Extended),
+        ("{/}", "end", "", DirectiveMode::Regular),
+        ("- /block", "end", "block", DirectiveMode::Regular),
+        ("{< div}", "tag", "div", DirectiveMode::Regular),
+        ("- < div", "tag", "div", DirectiveMode::Regular),
+        ("# < div", "tag", "div", DirectiveMode::Extended),
+        ("{<div}", "tag", "div", DirectiveMode::Regular),
+    ] {
+        let (syntax, remaining) = document(Some(&context)).parse(ParserInput::new(source)).unwrap();
+        let Some(SyntaxNode::Directive { span, candidate }) = syntax.nodes.first() else {
+            panic!("Expected a directive for {source:?}");
+        };
+
+        assert_eq!(candidate.name, Some(name), "{source:?}");
+        assert_eq!(candidate.body, body, "{source:?}");
+        assert_eq!(candidate.mode, mode, "{source:?}");
+
+        let body_end = span.end - candidate.closing_len;
+
+        assert_eq!(&source[body_end - body.len()..body_end], body);
+        assert!(remaining.is_at_end());
+    }
+}
+
+#[test]
 fn registered_shorthands_distinguish_classic_and_jade_like_forms() {
     use crate::core::directives::{Directive, Shorthand};
     use crate::core::syntax::DirectiveForm;

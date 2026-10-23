@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use crate::parsec::prelude::*;
 use crate::core::shorthands::ShorthandRegistry;
 
-use super::name::directive_name;
+use super::name::directive_content;
 use super::{DirectiveCandidate, DirectiveForm, DirectiveMode};
 
 #[cfg(test)]
@@ -40,13 +40,16 @@ pub(crate) fn classic_directive_candidate<'a>(
             .and_then(|binding| binding.closing.as_deref())
             .unwrap_or("}");
 
-        let content = choice(
-            map(seq(directive_name(), body(0, closing)), |(name, body)| (Some(name), body)),
-            map(body(1, closing), |body| (None, body))
-        );
-
-        let content = flat_map(spanned(content), |(span, (name, body)), input| {
+        let content = flat_map(spanned(body(1, closing)), |(span, _), input| {
             let content = input.source_slice(span);
+
+            let (name, body) = if let Some(binding) = binding {
+                (Some(binding.target), content)
+
+            } else {
+                let (parts, _) = directive_content(shorthands).parse(ParserInput::new(content))?;
+                parts
+            };
 
             Ok((DirectiveCandidate {
                 form: DirectiveForm::Classic,
@@ -65,11 +68,6 @@ pub(crate) fn classic_directive_candidate<'a>(
                 directive.mode = mode;
                 directive.opening_len = opening_span.len();
                 directive.closing_len = closing.len();
-
-                if let Some(binding) = binding {
-                    directive.name = Some(binding.target);
-                    directive.body = directive.content;
-                }
 
                 directive
             },

@@ -62,8 +62,8 @@ fn decode(raw: &str, start_byte: usize) -> Result<Cow<'_, str>, Box<dyn ParseErr
                     .ok_or_else(|| error("Expected four hexadecimal digits after \\u"))?;
 
                 let scalar = if (0xd800..=0xdbff).contains(&first) {
-                    if !matches!(chars.next(), Some((_, '\\')))
-                        || !matches!(chars.next(), Some((_, 'u'))) {
+                    if !matches!(chars.next(), Some((_, '\\'))) ||
+                        !matches!(chars.next(), Some((_, 'u'))) {
                         return Err(error("Expected a low surrogate after a high surrogate"));
                     }
 

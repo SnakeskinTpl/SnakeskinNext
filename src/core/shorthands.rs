@@ -50,6 +50,12 @@ impl<'a> ShorthandRegistry<'a> {
 }
 
 #[derive(Debug)]
+pub(crate) struct ShorthandDefinition<'a> {
+    pub opening: &'a str,
+    pub closing: Option<&'a str>,
+}
+
+#[derive(Debug)]
 pub(crate) struct ShorthandBinding<'a> {
     pub opening: Cow<'a, str>,
     pub closing: Option<Cow<'a, str>>,

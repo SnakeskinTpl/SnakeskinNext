@@ -4,7 +4,7 @@ use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation};
 use crate::core::shorthands::ShorthandRegistry;
 
-use super::name::directive_name;
+use super::name::directive_content;
 use super::{DirectiveCandidate, DirectiveForm, DirectiveMode};
 
 mod err;
@@ -61,8 +61,8 @@ pub(crate) fn jade_like_directive_candidate<'a>(
                 (Some(binding.target), content)
 
             } else {
-                let (name, remaining) = opt(directive_name()).parse(ParserInput::new(content))?;
-                (name, &content[remaining.byte_position()..])
+                let (parts, _) = directive_content(shorthands).parse(ParserInput::new(content))?;
+                parts
             };
 
             Ok((DirectiveCandidate {

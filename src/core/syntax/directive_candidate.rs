@@ -19,7 +19,7 @@ pub(crate) struct DirectiveCandidate<'a> {
     pub closing_len: usize,
     /// Original content without opening or closing, e.g. `foo bar` in `{foo bar}`.
     pub content: &'a str,
-    /// Tentative identifier, e.g. `foo` in `{foo bar}`; unresolved for `{1 + 2}`.
+    /// Tentative identifier or shorthand target; unresolved for `{1 + 2}`.
     pub name: Option<&'a str>,
     /// Content after the tentative name and separator, or all content if unnamed.
     pub body: &'a str,
