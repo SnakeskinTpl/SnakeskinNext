@@ -1,72 +1,112 @@
-use std::cell::Cell;
+use std::cell::RefCell;
 
 use crate::parsec::prelude::*;
+use crate::core::shorthands::ShorthandRegistry;
 
 use super::name::directive_name;
-use super::{DirectiveCandidate, DirectiveForm};
+use super::{DirectiveCandidate, DirectiveForm, DirectiveMode};
 
 #[cfg(test)]
 mod tests;
 
 /// Consumes the opening marker only; content and closing braces are not checked.
-/// Returns whether extended syntax is used.
-pub(crate) fn classic_directive_start<'a>() -> impl Parser<'a, Output = bool> {
-    map(seq(opt(tag("#")), tag("{")), |(hash, _)| hash.is_some())
-}
-
-pub(crate) fn classic_directive_candidate<'a>() -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
-    let content = choice(
-        map(seq(directive_name(), body(0)), |(name, body)| (Some(name), body)),
-        map(body(1), |body| (None, body))
-    );
-    let content = flat_map(spanned(content), |(span, (name, body)), input| {
-        let content = input.source_slice(span);
-
-        Ok((DirectiveCandidate {
-            form: DirectiveForm::Classic,
-            extended: false,
-            opening_len: 0,
-            closing_len: 0,
-            name,
-            body,
-            content,
-        }, input))
+/// Returns the directive mode.
+pub(crate) fn classic_directive_start<'a>(
+    shorthands: Option<&ShorthandRegistry<'_>>,
+) -> impl Parser<'a, Output = DirectiveMode> {
+    let builtin = map(seq(opt(tag("#")), tag("{")), |(hash, _)| {
+        match hash {
+            Some(_) => DirectiveMode::Extended,
+            None => DirectiveMode::Regular,
+        }
     });
 
-    map(
-        seq!(spanned(classic_directive_start()), content, tag("}")),
-        |(((opening_span, extended), mut directive), closing)| {
-            directive.extended = extended;
-            directive.opening_len = opening_span.len();
-            directive.closing_len = closing.len();
-            directive
-        },
-    )
+    parser(move |input| {
+        if let Some(binding) = shorthands.and_then(|registry| registry.find_classic_opening(&input)) {
+            return map(tag(binding.opening.as_ref()), |_| DirectiveMode::Regular).parse(input);
+        }
+
+        builtin.parse(input)
+    })
 }
 
-/// Leaves the outer closing brace for the enclosing parser.
-fn body<'a>(min: usize) -> impl Parser<'a, Output = &'a str> {
-    state(|| Cell::new(0usize), move |depth, input| {
-        take(|ch, escaped, _| {
+pub(crate) fn classic_directive_candidate<'a>(
+    shorthands: Option<&ShorthandRegistry<'a>>,
+) -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
+    parser(move |input| {
+        let binding = shorthands.and_then(|registry| registry.find_classic_opening(&input));
+
+        let closing = binding
+            .and_then(|binding| binding.closing.as_deref())
+            .unwrap_or("}");
+
+        let content = choice(
+            map(seq(directive_name(), body(0, closing)), |(name, body)| (Some(name), body)),
+            map(body(1, closing), |body| (None, body))
+        );
+
+        let content = flat_map(spanned(content), |(span, (name, body)), input| {
+            let content = input.source_slice(span);
+
+            Ok((DirectiveCandidate {
+                form: DirectiveForm::Classic,
+                mode: DirectiveMode::Regular,
+                opening_len: 0,
+                closing_len: 0,
+                name,
+                body,
+                content,
+            }, input))
+        });
+
+        map(
+            seq!(spanned(classic_directive_start(shorthands)), content, tag(closing)),
+            |(((opening_span, mode), mut directive), closing)| {
+                directive.mode = mode;
+                directive.opening_len = opening_span.len();
+                directive.closing_len = closing.len();
+
+                if let Some(binding) = binding {
+                    directive.name = Some(binding.target);
+                    directive.body = directive.content;
+                }
+
+                directive
+            },
+        ).parse(input)
+    })
+}
+
+/// Leaves the closing delimiter unconsumed outside balanced brackets and quotes.
+fn body<'a>(min: usize, closing: &str) -> impl Parser<'a, Output = &'a str> {
+    state(|| RefCell::new(Vec::new()), move |stack, input| {
+        take(|ch, escaped, input| {
             if escaped {
                 return true;
             }
 
-            match ch {
-                '{' => {
-                    depth.set(depth.get() + 1);
-                    true
+            let mut stack = stack.borrow_mut();
+            if let Some(&quote @ ('"' | '\'' | '`')) = stack.last() {
+                if ch == quote {
+                    stack.pop();
                 }
-
-                '}' if depth.get() == 0 => false,
-
-                '}' => {
-                    depth.set(depth.get() - 1);
-                    true
-                }
-
-                _ => true,
+                return true;
             }
+
+            if stack.is_empty() && tag(closing).parse(input.clone()).is_ok() {
+                return false;
+            }
+
+            match ch {
+                '{' => stack.push('}'),
+                '[' => stack.push(']'),
+                '(' => stack.push(')'),
+                '"' | '\'' | '`' => stack.push(ch),
+                '}' | ']' | ')' if stack.last() == Some(&ch) => { stack.pop(); }
+                _ => {}
+            }
+
+            true
         }, min..).parse(input)
     })
 }

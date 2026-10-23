@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::collections::hash_map::Entry;
 use std::ops::Range;
 
+use crate::core::shorthands::ShorthandBinding;
 use crate::core::syntax::identifier;
 use crate::core::syntax::json::{json, JsonKind, JsonValue};
 
@@ -62,15 +63,6 @@ impl Directive for Shorthand {
             })),
         }
     }
-}
-
-#[derive(Debug)]
-pub(crate) struct ShorthandBinding<'a> {
-    pub opening: Cow<'a, str>,
-    pub closing: Option<Cow<'a, str>>,
-    pub target: &'a str,
-    pub span: Range<usize>,
-    pub opening_span: Range<usize>,
 }
 
 /// Parses target { opening: "...", closing: "..." }; closing is optional.

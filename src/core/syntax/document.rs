@@ -3,6 +3,8 @@ use std::ops::Range;
 
 use crate::parsec::prelude::*;
 use crate::parsec::{line_break, line_indent, line_start};
+use crate::core::directives::DirectiveContext;
+use crate::core::shorthands::ShorthandRegistry;
 
 use super::directive_candidate::{
     classic_directive_candidate, classic_directive_start,
@@ -42,14 +44,18 @@ pub(crate) enum SyntaxNode<'a> {
 /// A recognized opening commits to directive parsing, so malformed input is not hidden.
 /// JadeLike directives close before a sibling or ancestor directive, or at end of input.
 /// Nonblank text lines also close directives according to their indentation.
-pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxDocument<'a>> {
-    state(|| RefCell::new(DocumentState::default()), |document, input| {
+pub(crate) fn document<'a>(
+    context: Option<&DirectiveContext<'a>>,
+) -> impl Parser<'a, Output = SyntaxDocument<'a>> {
+    let shorthands = context.map(|context| &context.shorthands);
+
+    state(|| RefCell::new(DocumentState::default()), move |document, input| {
         let classic = parser(|input| {
             let start_byte = input.byte_position();
 
             let parser = seq!(
-                lookup(classic_candidate_start()),
-                cut(classic_directive_candidate())
+                lookup(classic_candidate_start(shorthands)),
+                cut(classic_directive_candidate(shorthands))
             );
 
             let (((), candidate), remaining) = parser.parse(input)?;
@@ -60,9 +66,9 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxDocument<'a>> {
             Ok(((), remaining))
         });
 
-        let jade_like = flat_map(jade_like_line_start(), |indent, input| {
+        let jade_like = flat_map(jade_like_line_start(shorthands), |indent, input| {
             let start_byte = input.byte_position() - indent.len();
-            let (candidate, remaining) = cut(jade_like_directive_candidate(indent)).parse(input)?;
+            let (candidate, remaining) = cut(jade_like_directive_candidate(indent, shorthands)).parse(input)?;
 
             let span = start_byte..remaining.byte_position();
             let mut document = document.borrow_mut();
@@ -82,7 +88,7 @@ pub(crate) fn document<'a>() -> impl Parser<'a, Output = SyntaxDocument<'a>> {
 
             let line_content = take_match(
                 not(choice(
-                    candidate_start(),
+                    candidate_start(shorthands),
                     map(line_break(), |_| ())
                 )),
                 1..
@@ -169,29 +175,33 @@ impl DocumentState<'_> {
 }
 
 /// Empty braces are text; all other openings are candidates, even if unfinished.
-fn candidate_start<'a>() -> impl Parser<'a, Output = ()> {
+fn candidate_start<'a>(
+    shorthands: Option<&ShorthandRegistry<'_>>,
+) -> impl Parser<'a, Output = ()> {
     choice(
-        classic_candidate_start(),
-        map(jade_like_line_start(), |_| ())
+        classic_candidate_start(shorthands),
+        map(jade_like_line_start(shorthands), |_| ())
     )
 }
 
-fn classic_candidate_start<'a>() -> impl Parser<'a, Output = ()> {
+fn classic_candidate_start<'a>(shorthands: Option<&ShorthandRegistry<'_>>) -> impl Parser<'a, Output = ()> {
     map(
-        seq(classic_directive_start(), not(tag("}"))),
+        seq(classic_directive_start(shorthands), not(tag("}"))),
         |_| ()
     )
 }
 
 /// Reads indentation only at a physical line start, then checks the JadeLike marker.
-fn jade_like_line_start<'a>() -> impl Parser<'a, Output = &'a str> {
+fn jade_like_line_start<'a>(
+    shorthands: Option<&ShorthandRegistry<'_>>,
+) -> impl Parser<'a, Output = &'a str> {
     let indent = take(|ch, _, _| ch == ' ' || ch == '\t', 0..);
 
     map(
         seq!(
             line_start(),
             indent,
-            lookup(jade_like_directive_start())
+            lookup(jade_like_directive_start(shorthands))
         ),
         |(((), indent), ())| indent,
     )

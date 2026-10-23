@@ -2,9 +2,10 @@ use std::cell::RefCell;
 
 use crate::parsec::prelude::*;
 use crate::parsec::{ErrorLocation};
+use crate::core::shorthands::ShorthandRegistry;
 
 use super::name::directive_name;
-use super::{DirectiveCandidate, DirectiveForm};
+use super::{DirectiveCandidate, DirectiveForm, DirectiveMode};
 
 mod err;
 use err::JadeLikeBodyError;
@@ -12,41 +13,68 @@ use err::JadeLikeBodyError;
 #[cfg(test)]
 mod tests;
 
-/// Reads a marker and its separator, returning whether extended syntax is used.
+/// Reads a marker and its separator, returning the directive mode.
 /// The caller handles line boundaries and indentation.
-pub(crate) fn jade_like_directive_start<'a>() -> impl Parser<'a, Output = bool> {
+pub(crate) fn jade_like_directive_start<'a>(
+    shorthands: Option<&ShorthandRegistry<'_>>,
+) -> impl Parser<'a, Output = DirectiveMode> {
+    let marker = parser(move |input: ParserInput<'a>| {
+        let binding = shorthands.and_then(|registry| registry.find_opening(&input));
+
+        if let Some(binding) = binding {
+            return map(tag(binding.opening.as_ref()), |_| DirectiveMode::Regular).parse(input);
+        }
+
+        choice(
+            map(tag("-"), |_| DirectiveMode::Regular),
+            map(tag("#"), |_| DirectiveMode::Extended)
+        ).parse(input)
+    });
+
     map(
         seq(
-            choice(tag("-"), tag("#")),
+            marker,
             take(|ch, _, _| ch == ' ' || ch == '\t', 1..),
         ),
 
-        |(marker, _)| marker == "#",
+        |(mode, _)| mode,
     )
 }
 
 /// Parses one JadeLike directive, leaving its line ending unconsumed.
 /// Supports balanced delimiters, quoted strings and explicit continuation.
 /// Indentation is supplied by the caller and is not consumed here.
-pub(crate) fn jade_like_directive_candidate<'a>(indent: &'a str) -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
-    let parser = seq(
-        spanned(jade_like_directive_start()),
-        body(),
-    );
+pub(crate) fn jade_like_directive_candidate<'a>(
+    indent: &'a str,
+    shorthands: Option<&ShorthandRegistry<'a>>,
+) -> impl Parser<'a, Output = DirectiveCandidate<'a>> {
+    parser(move |input| {
+        let binding = shorthands.and_then(|registry| registry.find_opening(&input));
 
-    flat_map(parser, move |((opening_span, extended), content), input| {
-        let (name, remaining) = opt(directive_name()).parse(ParserInput::new(content))?;
-        let body = &content[remaining.byte_position()..];
+        let parser = seq(
+            spanned(jade_like_directive_start(shorthands)),
+            body(),
+        );
 
-        Ok((DirectiveCandidate {
-            form: DirectiveForm::JadeLike { indent },
-            extended,
-            opening_len: indent.len() + opening_span.len(),
-            closing_len: 0,
-            name,
-            body,
-            content,
-        }, input))
+        flat_map(parser, move |((opening_span, mode), content), input| {
+            let (name, body) = if let Some(binding) = binding {
+                (Some(binding.target), content)
+
+            } else {
+                let (name, remaining) = opt(directive_name()).parse(ParserInput::new(content))?;
+                (name, &content[remaining.byte_position()..])
+            };
+
+            Ok((DirectiveCandidate {
+                form: DirectiveForm::JadeLike { indent },
+                mode,
+                opening_len: indent.len() + opening_span.len(),
+                closing_len: 0,
+                name,
+                body,
+                content,
+            }, input))
+        }).parse(input)
     })
 }
 

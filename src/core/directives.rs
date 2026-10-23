@@ -1,12 +1,10 @@
 //! Core directive implementations and body parsers.
 
-use std::borrow::Cow;
-use std::collections::HashMap;
-
+use crate::core::shorthands::ShorthandRegistry;
 use crate::parsec::{ParseError, ParserInput};
 
 mod shorthand;
-pub(crate) use shorthand::{Shorthand, ShorthandBinding};
+pub(crate) use shorthand::Shorthand;
 
 pub(crate) trait Directive {
     fn definition(&self) -> &DirectiveDefinition<'_>;
@@ -67,7 +65,7 @@ pub(crate) struct AncestorRules<'a> {
 /// Borrows declarations from language-module sources that outlive processing.
 #[derive(Debug, Default)]
 pub(crate) struct DirectiveContext<'a> {
-    pub shorthands: HashMap<Cow<'a, str>, ShorthandBinding<'a>>,
+    pub shorthands: ShorthandRegistry<'a>,
 }
 
 // Reuse located parser diagnostics until semantic diagnostics are defined.

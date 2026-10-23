@@ -11,8 +11,8 @@ mod name;
 pub(crate) struct DirectiveCandidate<'a> {
     /// Braced or indentation-based syntax.
     pub form: DirectiveForm<'a>,
-    /// Uses the hash marker, e.g. `#{foo bar}` or `# foo bar`.
-    pub extended: bool,
+    /// Regular syntax or extended syntax with `#`, e.g. `#{foo bar}` or `# foo bar`.
+    pub mode: DirectiveMode,
     /// Bytes before content, including indentation, marker and separator.
     pub opening_len: usize,
     /// Bytes after content occupied by the closing delimiter.
@@ -23,6 +23,12 @@ pub(crate) struct DirectiveCandidate<'a> {
     pub name: Option<&'a str>,
     /// Content after the tentative name and separator, or all content if unnamed.
     pub body: &'a str,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DirectiveMode {
+    Regular,
+    Extended,
 }
 
 #[derive(Debug, PartialEq)]

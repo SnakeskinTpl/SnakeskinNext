@@ -48,7 +48,7 @@ fn invalid_configuration_does_not_modify_the_environment() {
 
         assert!(result.is_err(), "Expected invalid declaration: {source:?}");
         assert_eq!(context.shorthands.len(), 1);
-        assert_eq!(context.shorthands["<"].target, "tag");
+        assert_eq!(context.shorthands.get("<").unwrap().target, "tag");
     }
 }
 
@@ -74,7 +74,7 @@ fn duplicate_prefix_reports_original_byte_ranges_and_preserves_first_binding() {
 
     assert_eq!(duplicate.previous_span, 0..first.len());
     assert_eq!(context.shorthands.len(), 1);
-    assert_eq!(context.shorthands["<"].target, "tag");
+    assert_eq!(context.shorthands.get("<").unwrap().target, "tag");
 }
 
 #[test]
@@ -86,8 +86,8 @@ fn different_prefixes_can_target_the_same_directive() {
     directive.begin(&mut context, ParserInput::new(r#"tag {opening: "<<"}"#)).unwrap();
 
     assert_eq!(context.shorthands.len(), 2);
-    assert_eq!(context.shorthands["<"].target, "tag");
-    assert_eq!(context.shorthands["<<"].target, "tag");
+    assert_eq!(context.shorthands.get("<").unwrap().target, "tag");
+    assert_eq!(context.shorthands.get("<<").unwrap().target, "tag");
 }
 
 #[test]
@@ -98,8 +98,8 @@ fn requires_a_separator_and_preserves_ranges_with_optional_whitespace() {
 
     directive.begin(&mut context, ParserInput::new(source)).unwrap();
 
-    assert_eq!(context.shorthands["<"].target, "tag");
-    assert_eq!(context.shorthands["<"].span, 0..source.len());
+    assert_eq!(context.shorthands.get("<").unwrap().target, "tag");
+    assert_eq!(context.shorthands.get("<").unwrap().span, 0..source.len());
 
     let error = directive.begin(&mut context, ParserInput::new(r#"tag{opening: "["}"#));
 
