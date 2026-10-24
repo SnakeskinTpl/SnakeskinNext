@@ -4,7 +4,7 @@ use crate::core::syntax::identifier;
 use crate::core::types::infer;
 
 use crate::parsec::prelude::*;
-use crate::parsec::{ErrorLocation, ParseError};
+use crate::parsec::ParseError;
 
 use super::err::DirectiveTypeError;
 use super::{Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition};
@@ -81,16 +81,8 @@ fn declaration<'a>(context: &DirectiveContext<'a>, body: ParserInput<'a>, mutabl
 
     let ((name_span, name, initializer), _) = cut(grammar).parse(body)?;
 
-    let value_info = infer(&initializer, &context.types).map_err(|cause| {
-        let found_char = source.source_slice(cause.span.clone()).chars().next();
-        Box::new(DirectiveTypeError {
-            location: ErrorLocation {
-                start_byte: initializer.span.start,
-                failure_byte: cause.span.start,
-                found_char,
-            },
-            cause,
-        }) as Box<dyn ParseError>
+    let value_info = infer(&initializer, &context.types).map_err(|cause| -> Box<dyn ParseError> {
+        DirectiveTypeError::new(cause, &source, initializer.span.start)
     })?;
 
     // TODO: Track moves and borrows when reference-containing types are implemented.

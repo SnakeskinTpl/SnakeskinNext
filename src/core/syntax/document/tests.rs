@@ -1,3 +1,4 @@
+use crate::core::directives::DirectiveContext;
 use crate::parsec::*;
 
 use super::*;
@@ -33,7 +34,7 @@ fn explicit_markers_resolve_paired_and_unpaired_content_openings() {
         ("# < div", "tag", "div", DirectiveMode::Extended),
         ("{<div}", "tag", "div", DirectiveMode::Regular),
     ] {
-        let (syntax, remaining) = document(Some(&context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, remaining) = document(Some(&context.shorthands)).parse(ParserInput::new(source)).unwrap();
         let Some(SyntaxNode::Directive { span, candidate }) = syntax.nodes.first() else {
             panic!("Expected a directive for {source:?}");
         };
@@ -61,7 +62,7 @@ fn registered_shorthands_distinguish_classic_and_jade_like_forms() {
     ).unwrap();
     let source = "before <div>\n  < div\n    content";
 
-    let (document, remaining) = document(Some(&context)).parse(ParserInput::new(source)).unwrap();
+    let (document, remaining) = document(Some(&context.shorthands)).parse(ParserInput::new(source)).unwrap();
     let directives: Vec<_> = document.nodes.iter().filter_map(|node| {
         match node {
             SyntaxNode::Directive { span, candidate } => Some((span, candidate)),
@@ -85,7 +86,7 @@ fn registered_shorthands_distinguish_classic_and_jade_like_forms() {
 
     assert!(remaining.is_at_end());
 
-    let error = super::document(Some(&context))
+    let error = super::document(Some(&context.shorthands))
         .parse(ParserInput::new("before <div"))
         .unwrap_err();
 
@@ -101,7 +102,7 @@ fn shorthand_names_borrow_language_source_while_bodies_borrow_document_source() 
     let mut context = DirectiveContext::default();
     Shorthand::new().begin(&mut context, ParserInput::new(&language_source)).unwrap();
 
-    let (document, remaining) = document(Some(&context)).parse(ParserInput::new(&source)).unwrap();
+    let (document, remaining) = document(Some(&context.shorthands)).parse(ParserInput::new(&source)).unwrap();
     let candidates: Vec<_> = document.nodes.iter().filter_map(|node| {
         match node {
             SyntaxNode::Directive { candidate, .. } => Some(candidate),
@@ -126,11 +127,11 @@ fn shorthand_names_borrow_language_source_while_bodies_borrow_document_source() 
 }
 
 #[test]
-fn document_accepts_a_language_context_independent_of_source_lifetime() {
-    let context = DirectiveContext::default();
+fn document_accepts_a_shorthand_registry_independent_of_source_lifetime() {
+    let shorthands = ShorthandRegistry::default();
     let source = String::from("{foo bar}");
 
-    let (document, remaining) = document(Some(&context))
+    let (document, remaining) = document(Some(&shorthands))
         .parse(ParserInput::new(&source))
         .unwrap();
 

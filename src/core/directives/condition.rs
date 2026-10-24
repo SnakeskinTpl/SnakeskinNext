@@ -3,7 +3,7 @@ use crate::core::syntax::expression::expression;
 use crate::core::types::{infer, Type, TypeError, TypeErrorKind};
 
 use crate::parsec::prelude::*;
-use crate::parsec::{ErrorLocation, ParseError};
+use crate::parsec::ParseError;
 
 use super::{Directive, DirectiveAction, DirectiveBeginResult, DirectiveContext, DirectiveDefinition};
 
@@ -48,17 +48,8 @@ impl Directive for If {
             }
         });
 
-        checked.map_err(|cause| {
-            let found_char = source.source_slice(cause.span.clone()).chars().next();
-            
-            Box::new(DirectiveTypeError {
-                location: ErrorLocation {
-                    start_byte: condition.span.start,
-                    failure_byte: cause.span.start,
-                    found_char,
-                },
-                cause,
-            }) as Box<dyn ParseError>
+        checked.map_err(|cause| -> Box<dyn ParseError> {
+            DirectiveTypeError::new(cause, &source, condition.span.start)
         })?;
 
         Ok(DirectiveAction::OpenBlock { kind: BlockKind::If { condition } })

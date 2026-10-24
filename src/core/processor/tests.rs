@@ -62,7 +62,7 @@ fn explicit_jade_like_ends_confirm_dedent_without_closing_the_parent() {
         "- block outer\n  - block inner\n    text\n- end block",
     ] {
         let (mut processor, events) = recording_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         processor.process(syntax).unwrap();
 
@@ -86,7 +86,7 @@ fn inferred_close_confirmation_checks_names_and_cannot_be_reused() {
         ("- block value\ntext\n- end block", false),
     ] {
         let (mut processor, events) = recording_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let error = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -112,7 +112,7 @@ fn explicit_and_inferred_ends_call_handlers_in_nesting_order() {
         "{block }\n- /block",
     ] {
         let (mut processor, events) = recording_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         processor.process(syntax).unwrap();
 
@@ -159,7 +159,7 @@ fn conflicting_declared_shorthands_do_not_partially_register_a_directive() {
 fn implicit_inline_end_does_not_close_parent_block() {
     let source = "- block value\n  - inline value\n  text";
     let (mut processor, events) = recording_processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     processor.process(syntax).unwrap();
 
@@ -170,7 +170,7 @@ fn implicit_inline_end_does_not_close_parent_block() {
 fn explicit_close_before_inferred_close_does_not_close_parent_twice() {
     let source = "{block }\n  - block value\n    {/block}\ntext\n{/block}";
     let (mut processor, events) = recording_processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     processor.process(syntax).unwrap();
 
@@ -187,7 +187,7 @@ fn invalid_closures_and_unclosed_blocks_are_reported() {
         ("- block value\n  {block }\ntext", "crossed"),
     ] {
         let (mut processor, _) = recording_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let error = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -201,7 +201,7 @@ fn invalid_closures_and_unclosed_blocks_are_reported() {
             _ => false,
         }, "{source:?}: {error}");
 
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new("{block }{/block}")).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new("{block }{/block}")).unwrap();
 
         processor.process(syntax).unwrap();
     }
@@ -211,7 +211,7 @@ fn invalid_closures_and_unclosed_blocks_are_reported() {
 fn end_rejects_trailing_arguments_at_the_original_position() {
     let source = "{block }{end block extra}";
     let (mut processor, events) = recording_processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let error = processor.process(syntax).unwrap_err();
 
@@ -229,7 +229,7 @@ fn registers_shorthand_from_a_parsed_document() {
 
     processor.register_directive("shorthand", Box::new(Shorthand::new())).unwrap();
 
-    let (syntax, remaining) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, remaining) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     assert!(remaining.is_at_end());
 
@@ -247,7 +247,7 @@ fn registers_shorthand_from_a_parsed_document() {
 fn unknown_directive_reports_its_original_position_without_panicking() {
     let source = "я\n  - missing value";
     let mut processor = Processor::new();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let error = processor.process(syntax).unwrap_err();
 
@@ -265,7 +265,7 @@ fn unknown_directive_reports_its_original_position_without_panicking() {
 fn unresolved_candidates_are_not_silently_skipped() {
     let source = "{< .foo}";
     let mut processor = Processor::new();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let error = processor.process(syntax).unwrap_err();
     let error = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -279,7 +279,7 @@ fn missing_required_body_is_reported_before_calling_the_handler() {
     let source = "{shorthand }";
     let mut processor = Processor::new();
     processor.register_directive("shorthand", Box::new(Shorthand::new())).unwrap();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let error = processor.process(syntax).unwrap_err();
     let error = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -294,7 +294,7 @@ fn handler_errors_keep_absolute_positions_for_both_syntax_forms() {
     for source in ["я\n{shorthand tag {opening: 1}}", "я\n  - shorthand tag {opening: 1}"] {
         let mut processor = Processor::new();
         processor.register_directive("shorthand", Box::new(Shorthand::new())).unwrap();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
 
@@ -322,7 +322,7 @@ fn duplicate_shorthand_keeps_original_declaration_ranges() {
     let source = "- shorthand tag {opening: \"<\"}\n- shorthand output {opening: \"<\"}";
     let mut processor = Processor::new();
     processor.register_directive("shorthand", Box::new(Shorthand::new())).unwrap();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let error = processor.process(syntax).unwrap_err();
 
@@ -350,7 +350,7 @@ fn if_preserves_false_conditions_and_text_without_evaluating_them() {
 
     let source = "before{if false}inside{/if}after";
     let mut processor = conditional_processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(syntax).unwrap();
 
@@ -374,7 +374,7 @@ fn if_supports_nested_classic_and_jade_blocks_with_explicit_or_inferred_ends() {
         "- if enabled\n  - if !false\n    inner\n  - end if\n- end if",
     ] {
         let mut processor = conditional_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let result = processor.process(syntax).unwrap();
         let outer = result.nodes.iter().find_map(|node| match node {
@@ -396,7 +396,7 @@ fn if_requires_a_complete_boolean_condition_with_located_errors() {
 
     for source in ["{if 1}body{/if}", "- if \"text\"\n  body"] {
         let mut processor = conditional_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let cause = error.source().unwrap().downcast_ref::<TypeError>().unwrap();
@@ -410,7 +410,7 @@ fn if_requires_a_complete_boolean_condition_with_located_errors() {
 fn if_rejects_empty_unknown_and_incomplete_conditions_and_unclosed_blocks() {
     for source in ["{if}", "{if missing}{/if}", "{if true extra}{/if}", "{if !}{/if}", "{if true}"] {
         let mut processor = conditional_processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         assert!(processor.process(syntax).is_err(), "{source:?}");
     }
@@ -419,12 +419,12 @@ fn if_rejects_empty_unknown_and_incomplete_conditions_and_unclosed_blocks() {
 #[test]
 fn failed_if_processing_does_not_leak_output_or_block_state() {
     let mut processor = conditional_processor();
-    let (invalid, _) = document(Some(&processor.context)).parse(ParserInput::new("{if true}{if 1}")).unwrap();
+    let (invalid, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new("{if true}{if 1}")).unwrap();
 
     assert!(processor.process(invalid).is_err());
 
     let source = "{if enabled}ok{/if}";
-    let (valid, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (valid, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(valid).unwrap();
 

@@ -3,7 +3,6 @@ use std::ops::Range;
 
 use crate::parsec::prelude::*;
 use crate::parsec::{line_break, line_indent, line_start};
-use crate::core::directives::DirectiveContext;
 use crate::core::shorthands::ShorthandRegistry;
 
 use super::directive_candidate::{
@@ -45,10 +44,8 @@ pub(crate) enum SyntaxNode<'a> {
 /// JadeLike directives close before a sibling or ancestor directive, or at end of input.
 /// Nonblank text lines also close directives according to their indentation.
 pub(crate) fn document<'a>(
-    context: Option<&DirectiveContext<'a>>,
+    shorthands: Option<&ShorthandRegistry<'a>>,
 ) -> impl Parser<'a, Output = SyntaxDocument<'a>> {
-    let shorthands = context.map(|context| &context.shorthands);
-
     state(|| RefCell::new(DocumentState::default()), move |document, input| {
         let classic = parser(|input| {
             let start_byte = input.byte_position();

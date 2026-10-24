@@ -49,7 +49,7 @@ fn contradictory_block_actions_fail_instead_of_dropping_ir_or_closing_themselves
             closes,
             completions: completions.clone(),
         })).unwrap();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let cause = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -108,7 +108,7 @@ fn all_close_paths_run_end_once_in_the_inner_scope_then_restore_the_outer_bindin
         "- observe\n  - let local = true\n- end observe\n- let after = local + 1",
     ] {
         let (mut processor, completions) = observer_processor(false);
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let ir = processor.process(syntax).unwrap();
         let after = ir.nodes.iter().find_map(|node| match node {
@@ -126,7 +126,7 @@ fn all_close_paths_run_end_once_in_the_inner_scope_then_restore_the_outer_bindin
 fn failing_end_restores_the_file_environment_for_explicit_and_inferred_closes() {
     for source in ["{observe}{let local = true}{/observe}", "- observe\n  - let local = true"] {
         let (mut processor, completions) = observer_processor(true);
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         assert!(processor.process(syntax).is_err());
 

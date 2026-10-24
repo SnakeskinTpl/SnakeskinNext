@@ -21,7 +21,7 @@ fn processor<'a>() -> Processor<'a> {
 fn declarations_preserve_initializer_types_mutability_and_byte_ranges() {
     let source = "{let flag = true}{var count = 1u64}{let text = \"hello\"}";
     let mut processor = processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(syntax).unwrap();
 
@@ -47,7 +47,7 @@ fn declarations_preserve_initializer_types_mutability_and_byte_ranges() {
 fn declared_variables_supply_context_to_subsequent_initializers_and_conditions() {
     let source = "{let count = 1i64}{var next = 1 + count}{let enabled = next > count}{if enabled}yes{/if}";
     let mut processor = processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(syntax).unwrap();
     let Node::Declaration { declaration, .. } = &result.nodes[1] else { panic!("Expected declaration") };
@@ -65,7 +65,7 @@ fn inner_bindings_shadow_outer_names_and_the_outer_type_returns_after_close() {
         "- let flag = true\n- if flag\n  - var flag = 1\n- end if\n- if flag\n  outer",
     ] {
         let mut processor = processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let result = processor.process(syntax).unwrap();
 
@@ -77,7 +77,7 @@ fn inner_bindings_shadow_outer_names_and_the_outer_type_returns_after_close() {
 fn shadowing_initializer_can_read_the_outer_binding() {
     let source = "{let value = 1i64}{if true}{var value = value + 1}{/if}";
     let mut processor = processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(syntax).unwrap();
     let Node::If { children, .. } = &result.nodes[1] else { panic!("Expected conditional") };
@@ -94,7 +94,7 @@ fn duplicate_names_in_one_scope_are_rejected_at_the_new_name() {
         "{if true}{let value = 1}{let value = 2}{/if}",
     ] {
         let mut processor = processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let cause = (&*error as &dyn std::error::Error).downcast_ref::<ProcessError>().unwrap();
@@ -112,7 +112,7 @@ fn inner_bindings_do_not_escape_explicit_or_inferred_blocks() {
         "- if true\n  - let local = true\n- end if\n- if local\n  text",
     ] {
         let mut processor = processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let error = processor.process(syntax).unwrap_err();
         let cause = error.source().unwrap().downcast_ref::<TypeError>().unwrap();
@@ -130,7 +130,7 @@ fn malformed_declarations_and_unknown_initializers_are_rejected() {
         "{let value = value}", "{var value = missing}",
     ] {
         let mut processor = processor();
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         assert!(processor.process(syntax).is_err(), "{source:?}");
     }
@@ -142,7 +142,7 @@ fn file_bindings_do_not_leak_after_success_or_failure() {
     processor.context.types.insert("external", Binding { ty: Type::Bool, mutable: false });
 
     for source in ["{let local = true}", "{let local = true}{if true}{var temporary = 1}{if missing}"] {
-        let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+        let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
         let _ = processor.process(syntax);
 
@@ -152,7 +152,7 @@ fn file_bindings_do_not_leak_after_success_or_failure() {
         assert_eq!(processor.context.types.len(), 1);
     }
 
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new("{if external}ok{/if}")).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new("{if external}ok{/if}")).unwrap();
 
     assert!(processor.process(syntax).is_ok());
 }
@@ -161,7 +161,7 @@ fn file_bindings_do_not_leak_after_success_or_failure() {
 fn false_blocks_keep_declarations_in_ir_without_exposing_them_outside() {
     let source = "{if false}{let local = true}{/if}";
     let mut processor = processor();
-    let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();
+    let (syntax, _) = document(Some(&processor.context.shorthands)).parse(ParserInput::new(source)).unwrap();
 
     let result = processor.process(syntax).unwrap();
     let Node::If { children, .. } = &result.nodes[0] else { panic!("Expected conditional") };
