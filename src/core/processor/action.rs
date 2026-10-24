@@ -6,6 +6,7 @@ use crate::parsec::{ErrorLocation, ParseError};
 
 use super::builder::{IrBuilder, OpenDirective};
 use super::err::{ProcessError, ProcessErrorKind};
+use super::blocks::Blocks;
 
 /// State needed to apply an action; registry lookup remains in the document traversal.
 pub(crate) struct ActionContext<'borrow, 'directive, 'source> {
@@ -22,6 +23,26 @@ pub(crate) struct ActionContext<'borrow, 'directive, 'source> {
 impl<'directive, 'source> ActionContext<'_, 'directive, 'source> {
     /// Applies IR, scope and handler effects without an intermediate action representation.
     pub fn apply(&mut self, action: DirectiveAction<'source>) -> Result<(), Box<dyn ParseError>> {
+        // The declaration controls block lifetime; actions must respect that contract.
+        let invalid = match &action {
+            DirectiveAction::OpenBlock { .. } if !self.directive.definition().block => {
+                Some("An inline directive cannot open a block")
+            }
+
+            DirectiveAction::CloseBlock { .. } if self.directive.definition().block => {
+                Some("A block directive cannot act as an end directive")
+            }
+
+            _ => None,
+        };
+
+        if let Some(reason) = invalid {
+            return Err(ProcessError::new(
+                self.location,
+                ProcessErrorKind::InvalidDirectiveAction { name: self.name.into(), reason }
+            ));
+        }
+
         match action {
             DirectiveAction::OpenBlock { kind } => self.complete(Some(kind)),
 
@@ -58,8 +79,7 @@ impl<'directive, 'source> ActionContext<'_, 'directive, 'source> {
     /// Block handlers finish on close; inline handlers finish immediately.
     fn complete(&mut self, block: Option<BlockKind<'source>>) -> Result<(), Box<dyn ParseError>> {
         if self.directive.definition().block {
-            self.context.types.push_scope();
-            self.builder.open_block(OpenDirective {
+            Blocks::open(self.context, self.builder, OpenDirective {
                 name: self.name,
                 span: self.span.clone(),
                 directive: self.directive,
@@ -95,10 +115,7 @@ impl<'directive, 'source> ActionContext<'_, 'directive, 'source> {
         }
 
         if self.inferred_close.is_none() {
-            if let Some(opening) = self.builder.close_block(self.span.end) {
-                opening.directive.end(self.context)?;
-                self.context.types.pop_scope();
-            }
+            Blocks::close(self.context, self.builder, self.span.end)?;
         }
 
         Ok(())

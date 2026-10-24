@@ -6,6 +6,7 @@ use crate::parsec::{ErrorLocation, Parser, ParserInput};
 use super::action::ActionContext;
 use super::builder::IrBuilder;
 use super::err::{ProcessError, ProcessErrorKind};
+use super::blocks::Blocks;
 use super::{Processor, ProcessResult};
 
 impl<'a> Processor<'a> {
@@ -35,9 +36,9 @@ impl<'a> Processor<'a> {
                         return Err(ProcessError::new(location, ProcessErrorKind::CrossedImplicitEnd));
                     }
 
-                    if let Some(opening) = builder.close_block(span.start) {
-                        opening.directive.end(&mut self.context)?;
-                        self.context.types.pop_scope();
+                    let closed = Blocks::close(&mut self.context, &mut builder, span.start)?;
+
+                    if let Some(opening) = closed {
                         inferred_close = Some(InferredClose { position: span.start, name: opening.name });
                     }
                 }

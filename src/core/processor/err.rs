@@ -13,6 +13,7 @@ pub(crate) enum ProcessErrorKind {
     MismatchedEnd { expected: String, found: String },
     UnclosedBlock { name: String },
     CrossedImplicitEnd,
+    InvalidDirectiveAction { name: String, reason: &'static str },
 }
 
 #[derive(Debug)]
@@ -37,6 +38,7 @@ impl Display for ProcessError {
             ProcessErrorKind::UnexpectedEnd => write!(f, "No open block to close"),
             ProcessErrorKind::MismatchedEnd { expected, found } => write!(f, "Expected end of {expected:?}, found {found:?}"),
             ProcessErrorKind::UnclosedBlock { name } => write!(f, "Unclosed block {name:?}"),
+            ProcessErrorKind::InvalidDirectiveAction { name, reason } => write!(f, "Invalid action from directive {name:?}: {reason}"),
             ProcessErrorKind::CrossedImplicitEnd => write!(f, "Implicit end crosses an unclosed block"),
         }?;
 

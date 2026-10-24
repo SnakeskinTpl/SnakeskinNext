@@ -42,7 +42,7 @@ pub(crate) struct DirectiveDefinition<'a> {
     /// Alternative openings; explicit directive markers supply their own boundary.
     pub shorthands: Vec<ShorthandDefinition<'a>>,
 
-    /// Opens a block requiring an explicit or inferred end.
+    /// Declares block lifetime; OpenBlock actions are valid only when this is true.
     pub block: bool,
     /// Requires non-whitespace content after the name.
     pub requires_body: bool,
@@ -95,7 +95,7 @@ pub(crate) enum DirectiveAction<'a> {
     /// Close the current block, optionally checking its registered name.
     CloseBlock { name: Option<&'a str> },
 
-    /// Preserve block-specific data for IR assembly.
+    /// Supplies IR data for a directive declared as a block.
     OpenBlock { kind: BlockKind<'a> },
 
     Declare { declaration: crate::core::ir::VariableDeclaration<'a> },

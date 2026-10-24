@@ -9,6 +9,7 @@ mod action;
 mod register;
 mod process;
 mod builder;
+mod blocks;
 mod err;
 
 #[cfg(test)]

@@ -8,6 +8,7 @@ use super::*;
 use super::err::{ProcessError, ProcessErrorKind};
 
 mod variables;
+mod lifecycle;
 
 struct RecordingDirective {
     definition: super::super::directives::DirectiveDefinition<'static>,
