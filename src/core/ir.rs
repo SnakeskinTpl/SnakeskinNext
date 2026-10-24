@@ -5,7 +5,7 @@ use super::types::ValueInfo;
 
 /// Initial backend-independent structure; conditions are preserved, not executed.
 #[derive(Debug)]
-pub(crate) struct ProcessedDocument<'a> {
+pub(crate) struct IrDocument<'a> {
     pub nodes: Vec<Node<'a>>,
 }
 
@@ -36,4 +36,10 @@ pub(crate) struct VariableDeclaration<'a> {
     pub mutable: bool,
     pub initializer: Expression<'a>,
     pub value_info: ValueInfo<'a>,
+}
+
+/// Data needed to assemble a block once its children have been processed.
+#[derive(Debug)]
+pub(crate) enum BlockKind<'a> {
+    If { condition: Expression<'a> },
 }

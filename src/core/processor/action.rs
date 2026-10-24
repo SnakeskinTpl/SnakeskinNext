@@ -1,55 +1,106 @@
 use std::ops::Range;
 
-use crate::core::directives::DirectiveAction;
-use crate::core::ir::Node;
-use crate::core::syntax::expression::Expression;
-use crate::core::types::TypeEnvironment;
+use crate::core::directives::{Directive, DirectiveAction, DirectiveContext};
+use crate::core::ir::{BlockKind, Node};
 use crate::parsec::{ErrorLocation, ParseError};
 
-use super::blocks::{push_output, OpenDirective};
+use super::builder::{IrBuilder, OpenDirective};
 use super::err::{ProcessError, ProcessErrorKind};
 
-/// Only the state needed to apply an action; registry access stays in the processor.
+/// State needed to apply an action; registry lookup remains in the document traversal.
 pub(crate) struct ActionContext<'borrow, 'directive, 'source> {
     pub span: Range<usize>,
-    pub types: &'borrow mut TypeEnvironment<'source>,
-    pub open_directives: &'borrow mut [OpenDirective<'directive, 'source>],
-    pub nodes: &'borrow mut Vec<Node<'source>>,
+    pub name: &'directive str,
+    pub location: ErrorLocation,
+    pub directive: &'directive dyn Directive,
+    /// A close already performed by indentation on this line.
+    pub inferred_close: Option<&'directive str>,
+    pub context: &'borrow mut DirectiveContext<'source>,
+    pub builder: &'borrow mut IrBuilder<'directive, 'source>,
 }
 
-pub(crate) enum ActionOutcome<'a> {
-    Continue,
-    Conditional { condition: Expression<'a> },
-    CloseBlock { name: Option<&'a str> },
-}
+impl<'directive, 'source> ActionContext<'_, 'directive, 'source> {
+    /// Applies IR, scope and handler effects without an intermediate action representation.
+    pub fn apply(&mut self, action: DirectiveAction<'source>) -> Result<(), Box<dyn ParseError>> {
+        match action {
+            DirectiveAction::OpenBlock { kind } => self.complete(Some(kind)),
 
-impl<'a> DirectiveAction<'a> {
-    /// Applies immediate effects; block opening and closing remain with the document traversal.
-    pub fn apply(self, context: &mut ActionContext<'_, '_, 'a>) -> Result<ActionOutcome<'a>, Box<dyn ParseError>> {
-        match self {
-            Self::Conditional { condition } => Ok(ActionOutcome::Conditional { condition }),
-            Self::CloseBlock { name } => Ok(ActionOutcome::CloseBlock { name }),
-            Self::None => Ok(ActionOutcome::Continue),
-            Self::Declare { declaration } => {
-                if !context.types.declare(declaration.name, declaration.value_info.ty, declaration.mutable) {
+            DirectiveAction::CloseBlock { name } => {
+                self.complete(None)?;
+                self.close(name)
+            }
+
+            DirectiveAction::None => self.complete(None),
+
+            DirectiveAction::Declare { declaration } => {
+                if !self.context.types.declare(declaration.name, declaration.value_info.ty, declaration.mutable) {
                     return Err(ProcessError::new(
                         ErrorLocation {
-                            start_byte: context.span.start,
+                            start_byte: self.span.start,
                             failure_byte: declaration.name_span.start,
                             found_char: declaration.name.chars().next(),
                         },
+
                         ProcessErrorKind::DuplicateVariable { name: declaration.name.into() }
                     ));
                 }
 
-                push_output(
-                    Node::Declaration { span: context.span.clone(), declaration },
-                    context.open_directives,
-                    context.nodes
-                );
+                self.builder.push(Node::Declaration {
+                    span: self.span.clone(),
+                    declaration,
+                });
 
-                Ok(ActionOutcome::Continue)
+                self.complete(None)
             }
         }
+    }
+
+    /// Block handlers finish on close; inline handlers finish immediately.
+    fn complete(&mut self, block: Option<BlockKind<'source>>) -> Result<(), Box<dyn ParseError>> {
+        if self.directive.definition().block {
+            self.context.types.push_scope();
+            self.builder.open_block(OpenDirective {
+                name: self.name,
+                span: self.span.clone(),
+                directive: self.directive,
+                location: self.location,
+                block,
+            });
+
+            Ok(())
+
+        } else {
+            self.directive.end(self.context)
+        }
+    }
+
+    fn close(&mut self, name: Option<&str>) -> Result<(), Box<dyn ParseError>> {
+        let expected_name = self.inferred_close
+            .or_else(|| self.builder.current().map(|opening| opening.name));
+
+        let Some(expected_name) = expected_name else {
+            return Err(ProcessError::new(self.location, ProcessErrorKind::UnexpectedEnd));
+        };
+
+        if let Some(name) = name {
+            if name != expected_name {
+                return Err(ProcessError::new(
+                    self.location,
+                    ProcessErrorKind::MismatchedEnd {
+                        expected: expected_name.into(),
+                        found: name.into(),
+                    }
+                ));
+            }
+        }
+
+        if self.inferred_close.is_none() {
+            if let Some(opening) = self.builder.close_block(self.span.end) {
+                opening.directive.end(self.context)?;
+                self.context.types.pop_scope();
+            }
+        }
+
+        Ok(())
     }
 }

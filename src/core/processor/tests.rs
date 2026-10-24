@@ -333,12 +333,12 @@ fn duplicate_shorthand_keeps_original_declaration_ranges() {
 
 fn conditional_processor() -> Processor<'static> {
     use super::super::directives::{End, If};
-    use super::super::types::Type;
+    use super::super::types::{Binding, Type};
 
     let mut processor = Processor::new();
     processor.register_directive("if", Box::new(If::new())).unwrap();
     processor.register_directive("end", Box::new(End::new())).unwrap();
-    processor.context.types.insert("enabled", Type::Bool);
+    processor.context.types.insert("enabled", Binding { ty: Type::Bool, mutable: false });
     processor
 }
 

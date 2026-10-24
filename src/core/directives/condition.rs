@@ -1,3 +1,4 @@
+use crate::core::ir::BlockKind;
 use crate::core::syntax::expression::expression;
 use crate::core::types::{infer, Type, TypeError, TypeErrorKind};
 
@@ -60,6 +61,6 @@ impl Directive for If {
             }) as Box<dyn ParseError>
         })?;
 
-        Ok(DirectiveAction::Conditional { condition })
+        Ok(DirectiveAction::OpenBlock { kind: BlockKind::If { condition } })
     }
 }

@@ -1,7 +1,7 @@
 use crate::core::syntax::expression::{expression, BinaryOperator, Expression, UnaryOperator};
 use crate::parsec::{input_end, ltrim, seq, Parser, ParserInput};
 
-use super::{infer, Type, TypeEnvironment, TypeErrorKind};
+use super::{infer, Binding, Type, TypeEnvironment, TypeErrorKind};
 
 fn parse(source: &str) -> Expression<'_> {
     let ((parsed, ()), _) = seq(expression(), ltrim(input_end()))
@@ -26,7 +26,7 @@ fn infers_boolean_expressions_in_an_empty_environment() {
 
 #[test]
 fn resolves_names_from_the_environment_without_modifying_it_or_the_ast() {
-    let environment = TypeEnvironment::from([("enabled", Type::Bool), ("visible", Type::Bool)]);
+    let environment = TypeEnvironment::from([("enabled", Binding { ty: Type::Bool, mutable: false }), ("visible", Binding { ty: Type::Bool, mutable: false })]);
     let parsed = parse("!enabled || visible");
     let original = parsed.clone();
 
@@ -73,7 +73,7 @@ fn boolean_values_do_not_support_arithmetic_or_ordering() {
 
 #[test]
 fn casts_resolve_bool_and_report_unknown_type_names() {
-    let environment = TypeEnvironment::from([("flag", Type::Bool)]);
+    let environment = TypeEnvironment::from([("flag", Binding { ty: Type::Bool, mutable: false })]);
 
     assert_eq!(infer(&parse("<Bool>flag"), &environment).unwrap().ty, Type::Bool);
 
@@ -126,7 +126,7 @@ fn numeric_literals_use_suffixes_and_defaults_without_losing_exact_spelling() {
 fn literal_data_is_preserved_but_computed_expressions_are_not_marked_as_literals() {
     use crate::core::syntax::literal::LiteralKind;
 
-    let environment = TypeEnvironment::from([("flag", Type::Bool)]);
+    let environment = TypeEnvironment::from([("flag", Binding { ty: Type::Bool, mutable: false })]);
 
     for source in ["true", "(true)", "<Bool>true"] {
         let value_info = infer(&parse(source), &environment).unwrap();
@@ -160,7 +160,7 @@ fn string_literals_preserve_decoded_values_for_inlining() {
 
 #[test]
 fn string_variables_and_literals_share_a_type_but_not_literal_data() {
-    let environment = TypeEnvironment::from([("name", Type::Str)]);
+    let environment = TypeEnvironment::from([("name", Binding { ty: Type::Str, mutable: false })]);
 
     let literal = infer(&parse("\"hello\""), &environment).unwrap();
     let variable = infer(&parse("name"), &environment).unwrap();
@@ -175,7 +175,7 @@ fn string_variables_and_literals_share_a_type_but_not_literal_data() {
 
 #[test]
 fn explicit_operand_types_supply_context_in_either_order_before_defaults() {
-    let environment = TypeEnvironment::from([("wide", Type::Int { bits: 64 })]);
+    let environment = TypeEnvironment::from([("wide", Binding { ty: Type::Int { bits: 64 }, mutable: false })]);
 
     for source in ["wide + 1", "1 + wide", "1 + (2 + wide)", "1 + 2i64", "<Int<64>>(1 + 2)"] {
         let value_info = infer(&parse(source), &environment).unwrap();
@@ -211,7 +211,7 @@ fn invalid_widths_are_semantic_errors_with_source_ranges() {
 
 #[test]
 fn float_context_and_numeric_type_names_resolve_without_conversions() {
-    let environment = TypeEnvironment::from([("value", Type::Float { bits: 32 })]);
+    let environment = TypeEnvironment::from([("value", Binding { ty: Type::Float { bits: 32 }, mutable: false })]);
 
     for source in ["value + 1.5", "1 + value", "<Float<32>>1.5", "<Float<32>>(1 + 2)"] {
         let value_info = infer(&parse(source), &environment).unwrap();

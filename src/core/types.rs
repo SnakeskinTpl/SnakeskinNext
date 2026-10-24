@@ -1,7 +1,7 @@
 use super::syntax::literal::LiteralKind;
 
 mod environment;
-pub(crate) use environment::TypeEnvironment;
+pub(crate) use environment::{Binding, TypeEnvironment};
 
 mod literal;
 mod resolve;

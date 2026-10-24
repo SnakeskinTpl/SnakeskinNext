@@ -2,7 +2,7 @@ use crate::core::directives::{End, If, Let, Var};
 use crate::core::ir::Node;
 use crate::core::syntax::document::document;
 use crate::core::syntax::literal::LiteralKind;
-use crate::core::types::{Type, TypeError, TypeErrorKind};
+use crate::core::types::{Binding, Type, TypeError, TypeErrorKind};
 use crate::parsec::{Parser, ParserInput};
 
 use super::super::Processor;
@@ -139,7 +139,7 @@ fn malformed_declarations_and_unknown_initializers_are_rejected() {
 #[test]
 fn file_bindings_do_not_leak_after_success_or_failure() {
     let mut processor = processor();
-    processor.context.types.insert("external", Type::Bool);
+    processor.context.types.insert("external", Binding { ty: Type::Bool, mutable: false });
 
     for source in ["{let local = true}", "{let local = true}{if true}{var temporary = 1}{if missing}"] {
         let (syntax, _) = document(Some(&processor.context)).parse(ParserInput::new(source)).unwrap();

@@ -31,9 +31,9 @@ impl<'a> TypeEnvironment<'a> {
     }
 
     /// Seeds the current scope; directive declarations use declare to reject duplicates.
-    pub fn insert(&mut self, name: &'a str, ty: Type) -> Option<Type> {
+    pub fn insert(&mut self, name: &'a str, binding: Binding) -> Option<Binding> {
         self.scopes.last_mut().and_then(|scope| {
-            scope.insert(name, Binding { ty, mutable: false }).map(|binding| binding.ty)
+            scope.insert(name, binding)
         })
     }
 
@@ -68,10 +68,10 @@ impl Default for TypeEnvironment<'_> {
     fn default() -> Self { Self { scopes: vec![HashMap::new()] } }
 }
 
-impl<'a, const N: usize> From<[(&'a str, Type); N]> for TypeEnvironment<'a> {
-    fn from(bindings: [(&'a str, Type); N]) -> Self {
+impl<'a, const N: usize> From<[(&'a str, Binding); N]> for TypeEnvironment<'a> {
+    fn from(bindings: [(&'a str, Binding); N]) -> Self {
         let mut environment = Self::new();
-        for (name, ty) in bindings { environment.insert(name, ty); }
+        for (name, binding) in bindings { environment.insert(name, binding); }
         environment
     }
 }

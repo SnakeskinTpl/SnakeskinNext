@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use crate::parsec::ParseError;
 
 use super::directives::{Directive, DirectiveContext};
-use super::ir::ProcessedDocument;
+use super::ir::IrDocument;
 
 mod action;
 mod register;
-mod document;
-mod blocks;
+mod process;
+mod builder;
 mod err;
 
 #[cfg(test)]
@@ -28,4 +28,4 @@ impl<'a> Processor<'a> {
     }
 }
 
-type ProcessResult<'a> = Result<ProcessedDocument<'a>, Box<dyn ParseError>>;
+type ProcessResult<'a> = Result<IrDocument<'a>, Box<dyn ParseError>>;

@@ -2,7 +2,7 @@
 
 use crate::core::shorthands::{ShorthandDefinition, ShorthandRegistry};
 use crate::parsec::{ParseError, ParserInput};
-use crate::core::syntax::expression::Expression;
+use crate::core::ir::BlockKind;
 use crate::core::types::TypeEnvironment;
 
 mod err;
@@ -95,8 +95,8 @@ pub(crate) enum DirectiveAction<'a> {
     /// Close the current block, optionally checking its registered name.
     CloseBlock { name: Option<&'a str> },
 
-    /// Preserve a checked condition; processing does not evaluate it.
-    Conditional { condition: Expression<'a> },
+    /// Preserve block-specific data for IR assembly.
+    OpenBlock { kind: BlockKind<'a> },
 
     Declare { declaration: crate::core::ir::VariableDeclaration<'a> },
 }

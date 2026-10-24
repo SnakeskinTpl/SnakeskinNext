@@ -1,10 +1,10 @@
-use crate::core::ir::{Node, ProcessedDocument};
+use crate::core::ir::Node;
 use crate::core::syntax::document::{SyntaxDocument, SyntaxNode};
 use crate::core::syntax::identifier;
 use crate::parsec::{ErrorLocation, Parser, ParserInput};
 
-use super::action::{ActionContext, ActionOutcome};
-use super::blocks::{finish_output, push_output, InferredClose, OpenDirective};
+use super::action::ActionContext;
+use super::builder::IrBuilder;
 use super::err::{ProcessError, ProcessErrorKind};
 use super::{Processor, ProcessResult};
 
@@ -18,29 +18,27 @@ impl<'a> Processor<'a> {
     }
 
     fn process_document(&mut self, document: SyntaxDocument<'a>) -> ProcessResult<'a> {
-        let mut open_directives: Vec<OpenDirective<'_, 'a>> = Vec::new();
-        let mut nodes = Vec::new();
+        let mut builder = IrBuilder::new();
         let mut inferred_close: Option<InferredClose<'_>> = None;
 
         for node in document.nodes {
             if let SyntaxNode::ImplicitEnd { span, opening_span } = &node {
                 // Inline and explicitly closed candidates have no remaining block.
-                if open_directives.iter().any(|opening| opening.span == *opening_span) {
+                if builder.contains_opening(opening_span) {
                     let location = ErrorLocation {
                         start_byte: span.start,
                         failure_byte: span.start,
                         found_char: None,
                     };
 
-                    if open_directives.last().is_some_and(|opening| opening.span != *opening_span) {
+                    if builder.current().is_some_and(|opening| opening.span != *opening_span) {
                         return Err(ProcessError::new(location, ProcessErrorKind::CrossedImplicitEnd));
                     }
 
-                    if let Some(opening) = open_directives.pop() {
+                    if let Some(opening) = builder.close_block(span.start) {
                         opening.directive.end(&mut self.context)?;
                         self.context.types.pop_scope();
                         inferred_close = Some(InferredClose { position: span.start, name: opening.name });
-                        finish_output(opening, span.start, &mut open_directives, &mut nodes);
                     }
                 }
 
@@ -48,7 +46,7 @@ impl<'a> Processor<'a> {
             }
 
             if let SyntaxNode::Text { span, content } = &node {
-                push_output(Node::Text { span: span.clone(), content }, &mut open_directives, &mut nodes);
+                builder.push(Node::Text { span: span.clone(), content });
             }
 
             let SyntaxNode::Directive { span, candidate } = node else {
@@ -108,74 +106,24 @@ impl<'a> Processor<'a> {
             let body = ParserInput::with_offset(body_text, body_start);
             let action = directive.begin(&mut self.context, body)?;
 
-            let outcome = action.apply(&mut ActionContext {
-                span: span.clone(),
-                types: &mut self.context.types,
-                open_directives: &mut open_directives,
-                nodes: &mut nodes,
-            })?;
-
-            let closing_name = match outcome {
-                ActionOutcome::CloseBlock { name } => Some(name),
-                _ => None,
+            let mut action_context = ActionContext {
+                span,
+                name,
+                location: name_location,
+                directive: directive.as_ref(),
+                inferred_close: inferred_close_at_start.map(|closing| closing.name),
+                context: &mut self.context,
+                builder: &mut builder,
             };
 
-            let condition = match outcome {
-                ActionOutcome::Conditional { condition } => Some(condition),
-                _ => None,
-            };
-
-            let directive_end = span.end;
-
-            if directive.definition().block {
-                self.context.types.push_scope();
-                open_directives.push(OpenDirective {
-                    name,
-                    span,
-                    directive: directive.as_ref(),
-                    location: name_location,
-                    condition,
-                    children: Vec::new(),
-                });
-
-            } else {
-                directive.end(&mut self.context)?;
-            }
-
-            if let Some(name) = closing_name {
-                let expected_name = inferred_close_at_start.as_ref().map(|closing| closing.name)
-                    .or_else(|| open_directives.last().map(|opening| opening.name));
-
-                let Some(expected_name) = expected_name else {
-                    return Err(ProcessError::new(name_location, ProcessErrorKind::UnexpectedEnd));
-                };
-
-                if let Some(name) = name {
-                    if name != expected_name {
-                        return Err(ProcessError::new(
-                            name_location,
-                            ProcessErrorKind::MismatchedEnd {
-                                expected: expected_name.into(),
-                                found: name.into(),
-                            }
-                        ));
-                    }
-                }
-
-                if inferred_close_at_start.is_none() {
-                    if let Some(opening) = open_directives.pop() {
-                        opening.directive.end(&mut self.context)?;
-                        self.context.types.pop_scope();
-                        finish_output(opening, directive_end, &mut open_directives, &mut nodes);
-                    }
-                }
-            }
+            action_context.apply(action)?;
         }
 
-        if let Some(opening) = open_directives.last() {
-            return Err(ProcessError::new(opening.location, ProcessErrorKind::UnclosedBlock { name: opening.name.into() }));
-        }
-
-        Ok(ProcessedDocument { nodes })
+        builder.finish()
     }
+}
+
+struct InferredClose<'a> {
+    position: usize,
+    name: &'a str,
 }
